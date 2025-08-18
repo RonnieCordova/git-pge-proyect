@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\ApiCentrsl\\ApiCentrsl.csproj": {}
+    "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\ApiCentrsl\\ApiCentrsl.csproj": {
+    "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\ApiCentrsl\\ApiCentrsl.csproj",
-        "projectName": "ApiCentrsl",
-        "projectPath": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\ApiCentrsl\\ApiCentrsl.csproj",
+        "projectUniqueName": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj",
+        "projectName": "DotnetApiPostgres.Api",
+        "projectPath": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj",
         "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\ApiCentrsl\\obj\\",
+        "outputPath": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -43,9 +43,13 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "Microsoft.AspNetCore.OpenApi": {
+            "Microsoft.EntityFrameworkCore.Design": {
               "target": "Package",
-              "version": "[8.0.19, )"
+              "version": "[9.0.8, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[9.0.4, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
