@@ -1,3 +1,6 @@
+using DotnetApiPostgres.Api;
+using Microsoft.EntityFrameworkCore;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -6,6 +9,17 @@ builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+string? connectionString = builder.Configuration.GetConnectionString("default");
+
+if(string.IsNullOrEmpty(connectionString))
+{
+    throw new InvalidOperationException("Connection string 'default' not found.");
+}
+
+builder
+.Services
+.AddDbContext<ApplicationDbContext>(op => op.UseNpgsql(connectionString));
 
 var app = builder.Build();
 

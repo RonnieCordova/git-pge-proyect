@@ -1,0 +1,11 @@
+{
+  "Version": 1,
+  "Hash": "PKUiHb/T/ImIizBT59zU45dKerRfqUv3Ru/pJVgGyBw=",
+  "Source": "DotnetApiPostgres.Api",
+  "BasePath": "_content/DotnetApiPostgres.Api",
+  "Mode": "Default",
+  "ManifestType": "Build",
+  "ReferencedProjectsConfiguration": [],
+  "DiscoveryPatterns": [],
+  "Assets": []
+}
