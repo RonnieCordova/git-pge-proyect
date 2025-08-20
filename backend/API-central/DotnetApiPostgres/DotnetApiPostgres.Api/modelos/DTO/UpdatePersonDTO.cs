@@ -5,7 +5,7 @@ namespace DotnetApiPostgres.Api.Modelos.DTO;
 public class UpdatePersonDTO
 {
     
-    public required string Id { get; set; }
+    public required int Id { get; set; }
 
     [Required]
     public required string nombre { get; set; }
@@ -13,7 +13,7 @@ public class UpdatePersonDTO
     {
         return new Persona
         {
-            Id = int.Parse(updatePersonDTO.Id),
+            Id = updatePersonDTO.Id,
             nombre = updatePersonDTO.nombre
         };
     }

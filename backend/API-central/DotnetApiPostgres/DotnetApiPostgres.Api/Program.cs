@@ -20,6 +20,7 @@ if(string.IsNullOrEmpty(connectionString))
 builder
 .Services
 .AddDbContext<ApplicationDbContext>(op => op.UseNpgsql(connectionString));
+builder.Services.AddTransient<IpPersonService, PersonService>();
 
 var app = builder.Build();
 

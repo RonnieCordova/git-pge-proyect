@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj": {}
+    "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj": {}
   },
   "projects": {
-    "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj": {
+    "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj",
+        "projectUniqueName": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj",
         "projectName": "DotnetApiPostgres.Api",
-        "projectPath": "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj",
-        "packagesPath": "C:\\Users\\LENOVO.USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\obj\\",
+        "projectPath": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\DotnetApiPostgres.Api.csproj",
+        "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\pguayas1\\Documents\\pge_proyecto\\backend\\API-central\\DotnetApiPostgres\\DotnetApiPostgres.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\LENOVO.USER\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
