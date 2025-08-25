@@ -1,14 +1,11 @@
-using System.ComponentModel.DataAnnotations;
-using ef_core.Data;
-
 namespace ef_core.Data;
 
 //Creacion de la entidad de usuarios
 public class User
 {
     public int Id { get; set; }
-    public required string nombre { get; set; }
-    public required string apellido { get; set; }
+    public required string Nombre { get; set; }
+    public required string Apellido { get; set; }
 
 }
 

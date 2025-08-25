@@ -1,5 +1,3 @@
-
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
 using ef_core.Data;
 

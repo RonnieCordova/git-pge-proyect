@@ -1,6 +1,7 @@
 
 using Microsoft.EntityFrameworkCore;
 using ef_core.Data;
+using ef_core.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=users.db"));
 builder.Services.AddControllers();
+builder.Services.AddScoped<RawEventService>();
 
 var app = builder.Build();
 

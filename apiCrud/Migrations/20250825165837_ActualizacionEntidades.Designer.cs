@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ef_core.Data;
 
@@ -10,9 +11,11 @@ using ef_core.Data;
 namespace apiCrud.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250825165837_ActualizacionEntidades")]
+    partial class ActualizacionEntidades
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
@@ -23,19 +26,22 @@ namespace apiCrud.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
-                    b.Property<string>("DispositivoId")
-                        .HasColumnType("TEXT");
+                    b.Property<int>("DispositivoId")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Lote_ingesta")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("MarcaDeTiempo")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Payload_json")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<string>("TipoEvento")
+                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<int>("UsuarioId")
