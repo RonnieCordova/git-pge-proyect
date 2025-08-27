@@ -17,52 +17,71 @@ namespace apiCrud.Migrations
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
 
-            modelBuilder.Entity("ef_core.Data.RawEvent", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("INTEGER");
-
-                    b.Property<string>("DispositivoId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Lote_ingesta")
-                        .HasColumnType("TEXT");
-
-                    b.Property<DateTime>("MarcaDeTiempo")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Payload_json")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TipoEvento")
-                        .HasColumnType("TEXT");
-
-                    b.Property<int>("UsuarioId")
-                        .HasColumnType("INTEGER");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("RawEvents");
-                });
-
-            modelBuilder.Entity("ef_core.Data.User", b =>
+            modelBuilder.Entity("ef_core.Data.BiometricoData", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Apellido")
-                        .IsRequired()
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Detalle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<bool>("EsEntrada")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("EsLlegadaAlmuerzo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("EsSalida")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("EsSalidaAlmuerzo")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime?>("Hora")
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Nombre")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Users");
+                    b.ToTable("BiometricoData");
+                });
+
+            modelBuilder.Entity("ef_core.Data.SeatData", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Apellido")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Detalle")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("HoraEntrada")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("HoraRegresoAlmuerzo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("HoraSalida")
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime?>("HoraSalidaAlmuerzo")
+                        .HasColumnType("TEXT");
+
+                    b.Property<string>("Nombre")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SeatData");
                 });
 #pragma warning restore 612, 618
         }

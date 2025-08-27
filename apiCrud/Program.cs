@@ -11,7 +11,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=users.db"));
 builder.Services.AddControllers();
-builder.Services.AddScoped<RawEventService>();
+builder.Services.AddScoped<BiometricoDataService>();
+builder.Services.AddScoped<SeatDataService>();
 
 var app = builder.Build();
 
