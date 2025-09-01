@@ -132,9 +132,13 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
-            "EPPlus": {
+            "ExcelDataReader": {
               "target": "Package",
-              "version": "[8.1.0, )"
+              "version": "[3.7.0, )"
+            },
+            "ExcelDataReader.DataSet": {
+              "target": "Package",
+              "version": "[3.7.0, )"
             },
             "Microsoft.Extensions.Hosting": {
               "target": "Package",
