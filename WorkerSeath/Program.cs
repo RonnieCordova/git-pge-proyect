@@ -1,174 +1,89 @@
 ﻿using System;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Threading.Tasks;
-using System.IO;
-using System.Text;
-using System.Linq;
-using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using UglyToad.PdfPig;
 using ef_core.DTOs;
-using iText.Kernel.Pdf;
-using iText.Kernel.Pdf.Canvas.Parser;
-using iText.Kernel.Pdf.Canvas.Parser.Listener;
-using System.Collections.Generic;
 
-Console.WriteLine("WorkerSeath: Leyendo archivos de PDF...");
+Console.WriteLine("WorkerSeat: leyendo archivo PDF...");
 
 try
 {
-    string carpetaReportes = @"C:\Users\pguayas1\Documents\pruebas_worker_seat";
-    string[] archivosPdf = Directory.GetFiles(carpetaReportes, "*.pdf");
+    string pdfPath = @"C:\Users\pguayas1\Documents\pruebas_worker_seat\18 DE AGOSTO AL 22 DE AGOSTO DE 2025.pdf";
+    string apiUrl = "http://localhost:5165/api/SeatData";
 
-    if (archivosPdf.Length > 0)
+    using var httpClient = new HttpClient();
+    using var document = PdfDocument.Open(pdfPath);
+
+    foreach (var page in document.GetPages())
     {
-        Console.WriteLine($"Se encontraron {archivosPdf.Length} archivos. Procesando...");
+        string pageText = page.Text;
 
-        using (var httpClient = new HttpClient())
+        // Detecta líneas
+        var lineas = pageText.Split('\n');
+
+        string? nombre = null;
+        string? apellido = null;
+        DateTime? horaEntrada = null;
+        DateTime? horaSalidaAlmuerzo = null;
+        DateTime? horaRegresoAlmuerzo = null;
+        DateTime? horaSalida = null;
+
+        foreach (var linea in lineas)
         {
-            string apiUrl = "http://localhost:5165/api/SeatData";
-
-            foreach (string rutaArchivo in archivosPdf)
+            // Si detecta nombre/apellido
+            if (linea.StartsWith("Empleado:"))
             {
-                string pdfTexto = ExtraerTextoDePdf(rutaArchivo);
-                var registros = ParsearRegistrosDeSeath(pdfTexto);
+                var partes = linea.Replace("Empleado:", "").Trim().Split(' ');
+                nombre = partes[0];
+                apellido = partes.Length > 1 ? partes[1] : null;
+            }
 
-                foreach (var registro in registros)
-                {
-                    var response = await httpClient.PostAsJsonAsync(apiUrl, registro);
-                    if (response.IsSuccessStatusCode)
-                    {
-                        Console.WriteLine($"✅ Registro de {registro.Nombre} {registro.Apellido} para el {registro.HoraEntrada?.ToShortDateString() ?? "N/A"} enviado correctamente.");
-                    }
-                    else
-                    {
-                        string errorBody = await response.Content.ReadAsStringAsync();
-                        Console.WriteLine($"❌ Error al enviar registro de {registro.Nombre} {registro.Apellido}: {response.StatusCode} - {errorBody}");
-                    }
-                }
+            // Buscar fechas y horas en formato dd/MM/yyyy HH:mm
+            var match = Regex.Match(linea, @"(\d{1,2}/\d{1,2}/\d{4})\s+(\d{1,2}:\d{2})");
+            if (match.Success)
+            {
+                DateTime horaEvento = DateTime.ParseExact(
+                    $"{match.Groups[1].Value} {match.Groups[2].Value}",
+                    "d/M/yyyy HH:mm",
+                    System.Globalization.CultureInfo.InvariantCulture
+                );
+
+                if (linea.Contains("Entrada"))
+                    horaEntrada = horaEvento;
+                else if (linea.Contains("Salida Almuerzo"))
+                    horaSalidaAlmuerzo = horaEvento;
+                else if (linea.Contains("Regreso Almuerzo"))
+                    horaRegresoAlmuerzo = horaEvento;
+                else if (linea.Contains("Salida"))
+                    horaSalida = horaEvento;
             }
         }
-    }
-    else
-    {
-        Console.WriteLine("No se encontraron archivos PDF para procesar.");
+
+        // Si encontró datos, los envía a la API
+        if (nombre != null)
+        {
+            var seatData = new SeatDataDTO
+            {
+                Nombre = nombre,
+                Apellido = apellido,
+                HoraEntrada = horaEntrada,
+                HoraSalidaAlmuerzo = horaSalidaAlmuerzo,
+                HoraRegresoAlmuerzo = horaRegresoAlmuerzo,
+                HoraSalida = horaSalida,
+                Detalle = "Importado desde PDF Seat"
+            };
+
+            var response = await httpClient.PostAsJsonAsync(apiUrl, seatData);
+            if (response.IsSuccessStatusCode)
+                Console.WriteLine($"Registro de {nombre} {apellido} enviado correctamente.");
+            else
+                Console.WriteLine($"Error al enviar {nombre}: {response.StatusCode}");
+        }
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"❌ Ocurrió un error inesperado: {ex.Message}");
-}
-
-Console.WriteLine("Procesamiento de archivos de SEATH finalizado.");
-Console.ReadKey();
-
-// --- Funciones de Ayuda ---
-
-static string ExtraerTextoDePdf(string ruta)
-{
-    var stringBuilder = new StringBuilder();
-    using (var pdfDocument = new PdfDocument(new PdfReader(ruta)))
-    {
-        var numberOfPages = pdfDocument.GetNumberOfPages();
-        for (int i = 1; i <= numberOfPages; i++)
-        {
-            var strategy = new SimpleTextExtractionStrategy();
-            var page = pdfDocument.GetPage(i);
-            stringBuilder.Append(PdfTextExtractor.GetTextFromPage(page, strategy));
-        }
-    }
-    return stringBuilder.ToString();
-}
-
-static List<SeatDataDTO> ParsearRegistrosDeSeath(string contenido)
-{
-    var registros = new List<SeatDataDTO>();
-    var lineas = contenido.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
-
-    string nombreActual = null;
-    string apellidoActual = null;
-    
-    foreach (var linea in lineas)
-    {
-        // 1. Busca el nombre en la línea actual
-        var matchNombre = Regex.Match(linea.Trim(), @"^([A-ZÁÉÍÓÚ\s]+)\s+([A-ZÁÉÍÓÚ\s]+)$");
-        if (matchNombre.Success)
-        {
-            nombreActual = matchNombre.Groups[1].Value.Trim();
-            apellidoActual = matchNombre.Groups[2].Value.Trim();
-            continue;
-        }
-
-        // 2. Si la línea contiene una fecha y ya tenemos un nombre, procesa el registro
-        var matchRegistro = Regex.Match(linea, @"(\d{2}/\d{2}/\d{4})(.+)");
-        if (!string.IsNullOrEmpty(nombreActual) && matchRegistro.Success)
-        {
-            var fecha = DateTime.ParseExact(matchRegistro.Groups[1].Value, "dd/MM/yyyy", CultureInfo.InvariantCulture);
-            var datosRaw = matchRegistro.Groups[2].Value.Trim().Replace("\"", "");
-            
-            // Reemplaza múltiples comas por una sola y quita espacios
-            datosRaw = Regex.Replace(datosRaw, @",\s*,\s*", ",");
-            var campos = datosRaw.Split(',');
-
-            var registro = new SeatDataDTO
-            {
-                Nombre = nombreActual,
-                Apellido = apellidoActual
-            };
-
-            TimeSpan tempTime;
-            
-            int index = 0;
-            
-            // Hora de Entrada
-            if (campos.Length > index && TimeSpan.TryParse(campos[index].Trim(), out tempTime))
-            {
-                registro.HoraEntrada = fecha.Add(tempTime);
-            }
-            else if (campos.Length > index && !string.IsNullOrEmpty(campos[index].Trim()))
-            {
-                registro.Detalle = campos[index].Trim();
-            }
-            index++;
-            
-            // Hora de Salida Almuerzo
-            if (campos.Length > index && TimeSpan.TryParse(campos[index].Trim(), out tempTime))
-            {
-                registro.HoraSalidaAlmuerzo = fecha.Add(tempTime);
-            }
-            index++;
-            
-            // Hora de Regreso Almuerzo
-            if (campos.Length > index && TimeSpan.TryParse(campos[index].Trim(), out tempTime))
-            {
-                registro.HoraRegresoAlmuerzo = fecha.Add(tempTime);
-            }
-            index++;
-            
-            // Hora de Salida
-            if (campos.Length > index && TimeSpan.TryParse(campos[index].Trim(), out tempTime))
-            {
-                registro.HoraSalida = fecha.Add(tempTime);
-            }
-            index++;
-            
-            // Detalle (si no se capturó antes)
-            if (campos.Length > index && !string.IsNullOrEmpty(campos[index].Trim()))
-            {
-                if (string.IsNullOrEmpty(registro.Detalle))
-                {
-                    registro.Detalle = campos[index].Trim();
-                }
-            }
-
-            registros.Add(registro);
-        }
-        else if (linea.Trim().StartsWith("Pagina") || linea.Trim().StartsWith("Proceso:"))
-        {
-            // Reinicia las variables de nombre al encontrar una nueva sección
-            nombreActual = null;
-            apellidoActual = null;
-        }
-    }
-    return registros;
+    Console.WriteLine($"Error en WorkerSeat: {ex.Message}");
 }

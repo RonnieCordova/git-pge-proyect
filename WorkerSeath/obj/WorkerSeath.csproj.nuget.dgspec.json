@@ -132,6 +132,10 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "dependencies": {
+            "UglyToad.PdfPig": {
+              "target": "Package",
+              "version": "[1.7.0-custom-5, )"
+            },
             "iText7": {
               "target": "Package",
               "version": "[9.2.0, )"

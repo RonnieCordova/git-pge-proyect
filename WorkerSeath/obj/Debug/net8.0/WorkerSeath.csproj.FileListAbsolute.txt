@@ -1,3 +1,9 @@
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.csproj.AssemblyReference.cache
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.AssemblyInfoInputs.cache
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.AssemblyInfo.cs
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.csproj.CoreCompileInputs.cache
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.sourcelink.json
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\apiCrud.deps.json
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\apiCrud.runtimeconfig.json
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\appsettings.Development.json
@@ -48,6 +54,11 @@ C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\System.Dia
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\System.IO.Pipelines.dll
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\System.Text.Encodings.Web.dll
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\System.Text.Json.dll
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\UglyToad.PdfPig.dll
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\UglyToad.PdfPig.Core.dll
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\UglyToad.PdfPig.Fonts.dll
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\UglyToad.PdfPig.Tokenization.dll
+C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\UglyToad.PdfPig.Tokens.dll
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\runtimes\browser-wasm\nativeassets\net8.0\e_sqlite3.a
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\runtimes\linux-arm\native\libe_sqlite3.so
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\runtimes\linux-arm64\native\libe_sqlite3.so
@@ -72,12 +83,6 @@ C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\runtimes\w
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\runtimes\browser\lib\net8.0\System.Text.Encodings.Web.dll
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\apiCrud.dll
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\bin\Debug\net8.0\apiCrud.pdb
-C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.csproj.AssemblyReference.cache
-C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.GeneratedMSBuildEditorConfig.editorconfig
-C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.AssemblyInfoInputs.cache
-C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.AssemblyInfo.cs
-C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.csproj.CoreCompileInputs.cache
-C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.sourcelink.json
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSe.BAE9C0FA.Up2Date
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\WorkerSeath.dll
 C:\Users\pguayas1\Documents\pge_proyecto\WorkerSeath\obj\Debug\net8.0\refint\WorkerSeath.dll
