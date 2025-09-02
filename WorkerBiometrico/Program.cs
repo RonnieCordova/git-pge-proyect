@@ -6,9 +6,10 @@ using System.IO;
 using System.Data;
 using ExcelDataReader;
 using System.Text;
-using ef_core.DTOs;
 using System.Linq;
-using System.Globalization;
+using ef_core.DTOs;
+using ef_core.Data;
+using System.Collections.Generic;
 
 Console.WriteLine("WorkerBiometrico: Leyendo archivos de Excel...");
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
@@ -16,102 +17,96 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 try
 {
     string carpetaReportes = @"C:\Users\pguayas1\Documents\pruebas_worker_biometrico";
-
-    // Busca y combina archivos con extensión .xlsx y .xls
     string[] archivosExportados = Directory.GetFiles(carpetaReportes, "*.xlsx")
                                          .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
                                          .ToArray();
 
-    if (archivosExportados.Length > 0)
+    if (archivosExportados.Length == 0)
     {
-        Console.WriteLine($"Se encontraron {archivosExportados.Length} archivos. Procesando...");
+        Console.WriteLine("No se encontraron archivos de Excel para procesar.");
+        return;
+    }
 
-        using (var httpClient = new HttpClient())
+    Console.WriteLine($"Se encontraron {archivosExportados.Length} archivos. Procesando...");
+
+    using var httpClient = new HttpClient();
+    string apiUrl = "http://localhost:5165/api/BiometricoData";
+
+    foreach (string rutaArchivo in archivosExportados)
+    {
+        using var stream = File.Open(rutaArchivo, FileMode.Open, FileAccess.Read);
+        using var reader = ExcelReaderFactory.CreateReader(stream);
+
+        var dataSet = reader.AsDataSet(new ExcelDataSetConfiguration()
         {
-            string apiUrl = "http://localhost:5165/api/BiometricoData";
+            ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = true }
+        });
 
-            foreach (string rutaArchivo in archivosExportados)
+        var dataTable = dataSet.Tables[0];
+        
+        // Filtramos las filas ANTES de agrupar para asegurar que los datos son válidos
+        var filasValidas = dataTable.AsEnumerable()
+            .Where(row => row[1] != DBNull.Value && !string.IsNullOrEmpty(row[1].ToString()) && // Tiene ID de Usuario
+                          row[0] != DBNull.Value && double.TryParse(row[0].ToString(), out _));  // La columna Tiempo es un número
+
+        var registrosAgrupados = filasValidas.GroupBy(row => new
             {
-                using (var stream = File.Open(rutaArchivo, FileMode.Open, FileAccess.Read))
+                IdUsuario = row[1].ToString(),
+                Fecha = DateTime.FromOADate(Convert.ToDouble(row[0])).Date
+            });
+
+        foreach (var grupo in registrosAgrupados)
+        {
+            var marcacionesDelDia = grupo.OrderBy(row => Convert.ToDouble(row[0])).ToList();
+            var marcacionesAlmuerzo = marcacionesDelDia
+                .Where(m => DateTime.FromOADate(Convert.ToDouble(m[0])).TimeOfDay >= new TimeSpan(12, 0, 0) &&
+                              DateTime.FromOADate(Convert.ToDouble(m[0])).TimeOfDay < new TimeSpan(15, 0, 0))
+                .ToList();
+
+            DataRow primeraMarcacionAlmuerzo = marcacionesAlmuerzo.FirstOrDefault();
+            DataRow segundaMarcacionAlmuerzo = marcacionesAlmuerzo.Skip(1).FirstOrDefault();
+
+            foreach (var currentRow in marcacionesDelDia)
+            {
+                var horaEvento = DateTime.FromOADate(Convert.ToDouble(currentRow[0]));
+                var nombre = currentRow[2].ToString();
+                var apellido = currentRow[3].ToString();
+                var estado = currentRow[8].ToString();
+
+                bool esSalidaAlmuerzo = (primeraMarcacionAlmuerzo != null && currentRow == primeraMarcacionAlmuerzo);
+                bool esLlegadaAlmuerzo = (segundaMarcacionAlmuerzo != null && currentRow == segundaMarcacionAlmuerzo);
+
+                var biometricoDataDto = new BiometricoDataDTO
                 {
-                    using (var reader = ExcelReaderFactory.CreateReader(stream))
-                    {
-                        var result = reader.AsDataSet(new ExcelDataSetConfiguration()
-                        {
-                            ConfigureDataTable = (_) => new ExcelDataTableConfiguration()
-                            {
-                                UseHeaderRow = true
-                            }
-                        });
+                    Nombre = nombre,
+                    Apellido = apellido,
+                    Hora = horaEvento,
+                    Detalle = estado,
+                    EsEntrada = !esSalidaAlmuerzo && !esLlegadaAlmuerzo && currentRow == marcacionesDelDia.First(),
+                    EsSalida = !esSalidaAlmuerzo && !esLlegadaAlmuerzo && currentRow == marcacionesDelDia.Last(),
+                    EsSalidaAlmuerzo = esSalidaAlmuerzo,
+                    EsLlegadaAlmuerzo = esLlegadaAlmuerzo
+                };
 
-                        var dataTable = result.Tables[0];
-                        for (int row = 0; row < dataTable.Rows.Count; row++)
-                        {
-                            var currentRow = dataTable.Rows[row];
-
-                            // Lectura de las columnas exactas que necesitas
-                            var nombre = currentRow["Nombre"].ToString();
-                            var apellido = currentRow["Apellido"].ToString();
-                            var estado = currentRow["Estado"].ToString();
-
-                            var horaEvento = DateTime.ParseExact(
-                                currentRow["Tiempo"].ToString(),
-                                "d/M/yyyy H:mm:ss",
-                                CultureInfo.InvariantCulture
-                            );
-
-                            // Lógica para clasificar el tipo de evento
-                            bool esSalidaAlmuerzo = false;
-                            bool esLlegadaAlmuerzo = false;
-                            if (horaEvento.TimeOfDay >= new TimeSpan(12, 30, 0) &&
-                                horaEvento.TimeOfDay <= new TimeSpan(15, 0, 0))
-                            {
-                                if (estado.ToLower().Contains("salida"))
-                                {
-                                    esSalidaAlmuerzo = true;
-                                }
-                                else if (estado.ToLower().Contains("entrada") || estado.ToLower().Contains("regreso"))
-                                {
-                                    esLlegadaAlmuerzo = true;
-                                }
-                            }
-
-                            var biometricoDataDto = new BiometricoDataDTO
-                            {
-                                Nombre = nombre,
-                                Apellido = apellido,
-                                Hora = horaEvento,
-                                Detalle = estado,
-                                EsEntrada = estado.ToLower().Contains("entrada") && !esLlegadaAlmuerzo,
-                                EsSalida = estado.ToLower().Contains("salida") && !esSalidaAlmuerzo,
-                                EsSalidaAlmuerzo = esSalidaAlmuerzo,
-                                EsLlegadaAlmuerzo = esLlegadaAlmuerzo
-                            };
-
-                            var response = await httpClient.PostAsJsonAsync(apiUrl, biometricoDataDto);
-                            if (response.IsSuccessStatusCode)
-                            {
-                                Console.WriteLine($"Registro de {nombre} {apellido} enviado correctamente.");
-                            }
-                            else
-                            {
-                                string errorBody = await response.Content.ReadAsStringAsync();
-                                Console.WriteLine($"Error al enviar registro de {nombre} {apellido}: {response.StatusCode} - {errorBody}");
-                            }
-                        }
-                    }
+                var response = await httpClient.PostAsJsonAsync(apiUrl, biometricoDataDto);
+                
+                if (response.IsSuccessStatusCode)
+                {
+                    Console.WriteLine($"OK: Registro de {nombre} {apellido} a las {horaEvento} enviado.");
+                }
+                else
+                {
+                    string errorBody = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"ERROR al enviar registro de {nombre} {apellido}: {response.StatusCode} - {errorBody}");
                 }
             }
         }
-    }
-    else
-    {
-        Console.WriteLine("No se encontraron archivos de Excel para procesar.");
+        Console.WriteLine($"Archivo {Path.GetFileName(rutaArchivo)} procesado.");
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"Ocurrió un error inesperado: {ex.Message}");
+    Console.WriteLine($"Ocurrió un error inesperado: {ex.Message}\n{ex.StackTrace}");
 }
 
 Console.WriteLine("Procesamiento de archivos del biométrico finalizado.");
