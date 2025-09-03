@@ -1,4 +1,4 @@
-﻿// Worker Definitivo v3 - Lógica de búsqueda inversa (Look-behind)
+﻿// Worker Definitivo v3.1 - Lógica de separación de nombres corregida
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -9,8 +9,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
-using ef_core.DTOs;
-
+using ef_core.DTOs; // Asegúrate de tener la referencia a tus DTOs
 
 class Program
 {
@@ -20,7 +19,8 @@ class Program
 
         try
         {
-            string pdfPath = @"C:\Users\pguayas1\Documents\pruebas_worker_seat\18 DE AGOSTO AL 22 DE AGOSTO DE 2025.pdf";
+            // Asegúrate de que esta ruta sea la correcta en tu máquina.
+            string pdfPath = @"C:\Users\LENOVO.USER\Documents\reportes_seat\18 DE AGOSTO AL 22 DE AGOSTO DE 2025.pdf";
             string apiUrl = "http://localhost:5165/api/SeatData";
 
             using var httpClient = new HttpClient();
@@ -33,15 +33,12 @@ class Program
             foreach (var page in document.GetPages())
             {
                 var words = page.GetWords();
-
-                // Buscamos todas las palabras que son fechas para usarlas como anclas
                 var dateWords = words.Where(w => dateRegex.IsMatch(w.Text)).ToList();
 
                 foreach (var dateWord in dateWords)
                 {
-                    // LÓGICA PRINCIPAL: Por cada fecha, buscamos hacia arriba para encontrar el nombre
                     var nameWords = words
-                        .Where(w => w.BoundingBox.Bottom < dateWord.BoundingBox.Top && Math.Abs(w.BoundingBox.Centroid.X - dateWord.BoundingBox.Centroid.X) < 100)
+                        .Where(w => w.BoundingBox.Bottom < dateWord.BoundingBox.Top && Math.Abs(w.BoundingBox.Centroid.X - dateWord.BoundingBox.Centroid.X) < 150) // Aumentado el rango por si acaso
                         .OrderByDescending(w => w.BoundingBox.Top)
                         .ToList();
 
@@ -55,12 +52,11 @@ class Program
 
                         if (nameRegex.IsMatch(potentialName) && !IsCommonHeader(potentialName))
                         {
-                            employeeName = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(potentialName.ToLower());
-                            break; // Encontramos el nombre, salimos del bucle
+                            employeeName = potentialName; // Guardamos en mayúsculas para procesar
+                            break;
                         }
                     }
 
-                    // Ahora procesamos la línea de la fecha encontrada
                     string dateStr = dateWord.Text;
                     var wordsInLine = words.Where(w => Math.Abs(w.BoundingBox.Centroid.Y - dateWord.BoundingBox.Centroid.Y) < 2).OrderBy(w => w.BoundingBox.Left).ToList();
                     var timeAndDetailWords = wordsInLine.Skip(1).Select(w => w.Text).ToList();
@@ -68,9 +64,35 @@ class Program
                     var times = timeAndDetailWords.Where(w => timeRegex.IsMatch(w)).ToList();
                     var details = timeAndDetailWords.Where(w => !timeRegex.IsMatch(w) && !new[] { "P", "T", "M" }.Contains(w)).ToList();
 
-                    var nameParts = employeeName.Split(new[] { ' ' }, 2);
-                    string nombre = nameParts.Length > 0 ? nameParts[0] : "";
-                    string apellido = nameParts.Length > 1 ? nameParts[1] : "";
+                    // --- INICIO DE LA CORRECCIÓN DE NOMBRES ---
+                    var nameParts = employeeName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                    string nombre = "";
+                    string apellido = "";
+
+                    if (nameParts.Length >= 4) // Ej: FLORES PARRA TATIANA FERNANDA
+                    {
+                        apellido = $"{nameParts[0]} {nameParts[1]}";
+                        nombre = $"{nameParts[2]} {nameParts[3]}";
+                    }
+                    else if (nameParts.Length == 3) // Ej: YCAZA ABAD RAFAELLA
+                    {
+                        apellido = $"{nameParts[0]} {nameParts[1]}";
+                        nombre = nameParts[2];
+                    }
+                    else if (nameParts.Length == 2) // Ej: JOSÉ NEIRA
+                    {
+                        apellido = nameParts[0];
+                        nombre = nameParts[1];
+                    }
+                    else // Caso por defecto
+                    {
+                        apellido = employeeName;
+                    }
+                    
+                    // Convertimos a TitleCase después de la separación
+                    nombre = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(nombre.ToLower());
+                    apellido = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(apellido.ToLower());
+                    // --- FIN DE LA CORRECCIÓN DE NOMBRES ---
 
                     var seatData = new SeatDataDTO
                     {
@@ -93,10 +115,9 @@ class Program
                         seatData.HoraSalida = ParseDateTime(dateStr, times[3]);
                     }
                     if (details.Any()) seatData.Detalle += " - " + string.Join(" ", details);
+                    
+                    Console.WriteLine($"Empleado: {apellido}, {nombre} | Fecha: {dateStr} | Marcaciones: [{string.Join(", ", times)}]");
 
-                    Console.WriteLine($"Empleado: {employeeName} | Fecha: {dateStr} | Marcaciones: [{string.Join(", ", times)}] | Detalles: [{string.Join(", ", details)}]");
-
-                    // DESCOMENTA LA LÍNEA DE ABAJO PARA ENVIAR LOS DATOS A TU API
                     await httpClient.PostAsJsonAsync(apiUrl, seatData);
                 }
             }

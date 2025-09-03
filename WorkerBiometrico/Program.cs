@@ -7,16 +7,15 @@ using System.Data;
 using ExcelDataReader;
 using System.Text;
 using System.Linq;
-using ef_core.DTOs;
-using ef_core.Data;
 using System.Collections.Generic;
+using ef_core.DTOs;
 
-Console.WriteLine("WorkerBiometrico: Leyendo archivos de Excel...");
+Console.WriteLine("WorkerBiometrico (Versión Final): Leyendo archivos de Excel...");
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    string carpetaReportes = @"C:\Users\pguayas1\Documents\pruebas_worker_biometrico";
+    string carpetaReportes = @"C:\Users\LENOVO.USER\Documents\reportes_biometrico"; // Asegúrate que esta ruta sea correcta
     string[] archivosExportados = Directory.GetFiles(carpetaReportes, "*.xlsx")
                                          .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
                                          .ToArray();
@@ -24,13 +23,14 @@ try
     if (archivosExportados.Length == 0)
     {
         Console.WriteLine("No se encontraron archivos de Excel para procesar.");
+        Console.ReadKey();
         return;
     }
 
     Console.WriteLine($"Se encontraron {archivosExportados.Length} archivos. Procesando...");
 
     using var httpClient = new HttpClient();
-    string apiUrl = "http://localhost:5165/api/BiometricoData";
+    string apiUrl = "http://localhost:5165/api/BiometricoData"; // Asegúrate que el puerto sea el correcto
 
     foreach (string rutaArchivo in archivosExportados)
     {
@@ -43,65 +43,44 @@ try
         });
 
         var dataTable = dataSet.Tables[0];
-        
-        // Filtramos las filas ANTES de agrupar para asegurar que los datos son válidos
-        var filasValidas = dataTable.AsEnumerable()
-            .Where(row => row[1] != DBNull.Value && !string.IsNullOrEmpty(row[1].ToString()) && // Tiene ID de Usuario
-                          row[0] != DBNull.Value && double.TryParse(row[0].ToString(), out _));  // La columna Tiempo es un número
 
-        var registrosAgrupados = filasValidas.GroupBy(row => new
-            {
-                IdUsuario = row[1].ToString(),
-                Fecha = DateTime.FromOADate(Convert.ToDouble(row[0])).Date
-            });
-
-        foreach (var grupo in registrosAgrupados)
+        foreach (DataRow currentRow in dataTable.Rows)
         {
-            var marcacionesDelDia = grupo.OrderBy(row => Convert.ToDouble(row[0])).ToList();
-            var marcacionesAlmuerzo = marcacionesDelDia
-                .Where(m => DateTime.FromOADate(Convert.ToDouble(m[0])).TimeOfDay >= new TimeSpan(12, 0, 0) &&
-                              DateTime.FromOADate(Convert.ToDouble(m[0])).TimeOfDay < new TimeSpan(15, 0, 0))
-                .ToList();
-
-            DataRow primeraMarcacionAlmuerzo = marcacionesAlmuerzo.FirstOrDefault();
-            DataRow segundaMarcacionAlmuerzo = marcacionesAlmuerzo.Skip(1).FirstOrDefault();
-
-            foreach (var currentRow in marcacionesDelDia)
+            // --- Verificación de Fila Válida ---
+            // Si la columna de ID (1) o Tiempo (0) está vacía o no es una fecha, la ignoramos.
+            if (currentRow[1] == DBNull.Value || string.IsNullOrEmpty(currentRow[1].ToString()) ||
+                currentRow[0] == DBNull.Value || !(currentRow[0] is DateTime))
             {
-                var horaEvento = DateTime.FromOADate(Convert.ToDouble(currentRow[0]));
-                var nombre = currentRow[2].ToString();
-                var apellido = currentRow[3].ToString();
-                var estado = currentRow[8].ToString();
+                continue; // Salta a la siguiente fila
+            }
 
-                bool esSalidaAlmuerzo = (primeraMarcacionAlmuerzo != null && currentRow == primeraMarcacionAlmuerzo);
-                bool esLlegadaAlmuerzo = (segundaMarcacionAlmuerzo != null && currentRow == segundaMarcacionAlmuerzo);
+            var horaEvento = (DateTime)currentRow[0];
+            var nombre = currentRow[2].ToString();
+            var apellido = currentRow[3].ToString();
+            var estado = currentRow[8].ToString(); // "Entrada" o "Salida"
 
-                var biometricoDataDto = new BiometricoDataDTO
-                {
-                    Nombre = nombre,
-                    Apellido = apellido,
-                    Hora = horaEvento,
-                    Detalle = estado,
-                    EsEntrada = !esSalidaAlmuerzo && !esLlegadaAlmuerzo && currentRow == marcacionesDelDia.First(),
-                    EsSalida = !esSalidaAlmuerzo && !esLlegadaAlmuerzo && currentRow == marcacionesDelDia.Last(),
-                    EsSalidaAlmuerzo = esSalidaAlmuerzo,
-                    EsLlegadaAlmuerzo = esLlegadaAlmuerzo
-                };
+            // --- Lógica Simplificada: El worker solo reporta lo que ve ---
+            var biometricoDataDto = new BiometricoDataDTO
+            {
+                Nombre = nombre,
+                Apellido = apellido,
+                Hora = horaEvento,
+                Detalle = estado, // Guardamos el estado crudo ("Entrada" o "Salida")
+                EsEntrada = estado.ToLower().Contains("entrada"),
+                EsSalida = estado.ToLower().Contains("salida"),
+                EsSalidaAlmuerzo = false, // La interpretación se hará en el UnificationService
+                EsLlegadaAlmuerzo = false  // La interpretación se hará en el UnificationService
+            };
 
-                var response = await httpClient.PostAsJsonAsync(apiUrl, biometricoDataDto);
-                
-                if (response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"OK: Registro de {nombre} {apellido} a las {horaEvento} enviado.");
-                }
-                else
-                {
-                    string errorBody = await response.Content.ReadAsStringAsync();
-                    Console.WriteLine($"ERROR al enviar registro de {nombre} {apellido}: {response.StatusCode} - {errorBody}");
-                }
+            var response = await httpClient.PostAsJsonAsync(apiUrl, biometricoDataDto);
+            
+            if (!response.IsSuccessStatusCode)
+            {
+                string errorBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"ERROR al enviar registro de {nombre} {apellido}: {response.StatusCode} - {errorBody}");
             }
         }
-        Console.WriteLine($"Archivo {Path.GetFileName(rutaArchivo)} procesado.");
+        Console.WriteLine($"Archivo {Path.GetFileName(rutaArchivo)} procesado y datos enviados.");
     }
 }
 catch (Exception ex)

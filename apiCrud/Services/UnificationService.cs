@@ -8,99 +8,178 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ef_core.Services;
-public class UnificationService
+namespace ef_core.Services
 {
-    private readonly ApplicationDbContext _dbContext;
-
-    public UnificationService(ApplicationDbContext dbContext)
+    public class UnificationService
     {
-        _dbContext = dbContext;
-    }
+        private readonly ApplicationDbContext _dbContext;
 
-    public async Task<List<RegistroConsolidado>> GenerarReporteConsolidado(DateOnly fechaInicio, DateOnly fechaFin)
-    {
-        var resultadoFinal = new List<RegistroConsolidado>();
-
-        DateTime inicioDt = fechaInicio.ToDateTime(TimeOnly.MinValue);
-        DateTime finDt = fechaFin.ToDateTime(TimeOnly.MaxValue);
-
-        var todosLosSeat = await _dbContext.SeatData
-            .Where(s => s.HoraEntrada.HasValue && s.HoraEntrada >= inicioDt && s.HoraEntrada <= finDt)
-            .ToListAsync();
-
-        var todosLosBiometrico = await _dbContext.BiometricoData
-            .Where(b => b.Hora.HasValue && b.Hora >= inicioDt && b.Hora <= finDt)
-            .ToListAsync();
-
-        var empleadosSeat = todosLosSeat.Select(s => NormalizeString((s.Nombre + " " + s.Apellido).Trim())).Distinct();
-        var empleadosBiometrico = todosLosBiometrico.Select(b => NormalizeString((b.Nombre + " " + b.Apellido).Trim())).Distinct();
-        var todosLosNombresNormalizados = empleadosSeat.Union(empleadosBiometrico).Distinct();
-
-        foreach (var nombreNormalizado in todosLosNombresNormalizados)
+        public UnificationService(ApplicationDbContext dbContext)
         {
+            _dbContext = dbContext;
+        }
+
+        public async Task<List<RegistroConsolidado>> GenerarReporteConsolidado(DateOnly fechaInicio, DateOnly fechaFin)
+        {
+            DateTime inicioDt = fechaInicio.ToDateTime(TimeOnly.MinValue);
+            DateTime finDt = fechaFin.ToDateTime(TimeOnly.MaxValue);
+
+            var todosLosSeat = await _dbContext.SeatData
+                .Where(s => s.HoraEntrada.HasValue && s.HoraEntrada >= inicioDt && s.HoraEntrada <= finDt)
+                .ToListAsync();
+
+            var todosLosBiometrico = await _dbContext.BiometricoData
+                .Where(b => b.Hora.HasValue && b.Hora >= inicioDt && b.Hora <= finDt)
+                .ToListAsync();
+
+            var resultadoFinal = new List<RegistroConsolidado>();
+            var empleadosBiometricoUnicos = todosLosBiometrico.Select(b => new { b.Nombre, b.Apellido }).Distinct().ToList();
+            var empleadosSeatUnicos = todosLosSeat.Select(s => new { s.Nombre, s.Apellido }).Distinct().ToList();
+
+            // --- 1. CONSTRUIR EL MAPA DE IDENTIDAD ---
+            var mapaDeNombres = new Dictionary<string, string>(); // Key: Nombre Biometrico, Value: Nombre SEAT
+            var nombresBiometricoMapeados = new HashSet<string>();
+
+            foreach (var empSeat in empleadosSeatUnicos)
+            {
+                string nombreCompletoSeat = NormalizeString(empSeat.Apellido + " " + empSeat.Nombre);
+                string mejorMatchBiometrico = null;
+                int maxPuntuacion = 0;
+
+                foreach (var empBio in empleadosBiometricoUnicos)
+                {
+                    string nombreCompletoBio = NormalizeString(empBio.Nombre + " " + empBio.Apellido);
+                    if (nombresBiometricoMapeados.Contains(nombreCompletoBio)) continue;
+
+                    int puntuacionActual = GetMatchScore(nombreCompletoSeat, nombreCompletoBio);
+                    if (puntuacionActual > maxPuntuacion)
+                    {
+                        maxPuntuacion = puntuacionActual;
+                        mejorMatchBiometrico = nombreCompletoBio;
+                    }
+                }
+
+                if (mejorMatchBiometrico != null && maxPuntuacion > 1) // Umbral de confianza: deben coincidir al menos 2 palabras
+                {
+                    mapaDeNombres[mejorMatchBiometrico] = nombreCompletoSeat;
+                    nombresBiometricoMapeados.Add(mejorMatchBiometrico);
+                }
+            }
+
+            // --- 2. UNIFICAR DATOS USANDO EL MAPA ---
             for (var dia = fechaInicio; dia <= fechaFin; dia = dia.AddDays(1))
             {
-                var registroSeat = todosLosSeat.FirstOrDefault(s => s.HoraEntrada.HasValue && NormalizeString((s.Nombre + " " + s.Apellido).Trim()) == nombreNormalizado && DateOnly.FromDateTime(s.HoraEntrada.Value) == dia);
-
-                var registrosBiometricoDelDia = todosLosBiometrico
-                    .Where(b => b.Nombre != null && b.Apellido != null && b.Hora.HasValue &&
-                                nombreNormalizado.Contains(NormalizeString(b.Nombre)) &&
-                                nombreNormalizado.Contains(NormalizeString(b.Apellido)) &&
-                                DateOnly.FromDateTime(b.Hora.Value) == dia)
-                    .OrderBy(b => b.Hora)
-                    .ToList();
-
-                if (registroSeat == null && !registrosBiometricoDelDia.Any())
+                foreach (var empSeat in empleadosSeatUnicos)
                 {
-                    continue;
+                    string nombreCompletoSeat = (empSeat.Apellido + " " + empSeat.Nombre).Trim();
+                    string nombreNormalizadoSeat = NormalizeString(nombreCompletoSeat);
+
+                    var registroSeatDelDia = todosLosSeat.FirstOrDefault(s => s.Apellido == empSeat.Apellido && s.Nombre == empSeat.Nombre && s.HoraEntrada.HasValue && DateOnly.FromDateTime(s.HoraEntrada.Value) == dia);
+
+                    string nombreBiometricoAsociado = mapaDeNombres.FirstOrDefault(kvp => kvp.Value == nombreNormalizadoSeat).Key;
+                    var marcacionesBiometricoDelDia = new List<BiometricoData>();
+
+                    if (nombreBiometricoAsociado != null)
+                    {
+                        marcacionesBiometricoDelDia = todosLosBiometrico
+                            .Where(b => DateOnly.FromDateTime(b.Hora.Value) == dia && NormalizeString(b.Nombre + " " + b.Apellido) == nombreBiometricoAsociado)
+                            .OrderBy(b => b.Hora).ToList();
+                    }
+
+                    if (registroSeatDelDia == null && !marcacionesBiometricoDelDia.Any()) continue;
+
+                    var registro = CrearRegistroConsolidado(nombreCompletoSeat, dia, registroSeatDelDia, marcacionesBiometricoDelDia);
+                    resultadoFinal.Add(registro);
                 }
+            }
 
-                string nombrePrincipal = registroSeat != null ? (registroSeat.Nombre + " " + registroSeat.Apellido).Trim() : CultureInfo.CurrentCulture.TextInfo.ToTitleCase(nombreNormalizado);
-
-                var registro = new RegistroConsolidado
+            // --- 3. PROCESAR EMPLEADOS QUE SOLO ESTÁN EN EL BIOMÉTRICO ---
+            var empleadosSoloBiometrico = empleadosBiometricoUnicos.Where(emp => !nombresBiometricoMapeados.Contains(NormalizeString(emp.Nombre + " " + emp.Apellido)));
+            foreach (var empBio in empleadosSoloBiometrico)
+            {
+                string nombreCompletoBio = (empBio.Nombre + " " + empBio.Apellido).Trim();
+                for (var dia = fechaInicio; dia <= fechaFin; dia = dia.AddDays(1))
                 {
-                    NombreCompleto = nombrePrincipal,
-                    Fecha = dia
-                };
+                    var marcacionesDelDia = todosLosBiometrico
+                        .Where(b => b.Nombre == empBio.Nombre && b.Apellido == empBio.Apellido && DateOnly.FromDateTime(b.Hora.Value) == dia)
+                        .OrderBy(b => b.Hora).ToList();
 
-                if (registroSeat != null)
-                {
-                    if (registroSeat.HoraEntrada.HasValue) { registro.HoraEntrada = registroSeat.HoraEntrada; registro.Fuentes.Add("Entrada: SEAT"); }
-                    if (registroSeat.HoraSalidaAlmuerzo.HasValue) { registro.HoraSalidaAlmuerzo = registroSeat.HoraSalidaAlmuerzo; registro.Fuentes.Add("Salida Almuerzo: SEAT"); }
-                    if (registroSeat.HoraRegresoAlmuerzo.HasValue) { registro.HoraRegresoAlmuerzo = registroSeat.HoraRegresoAlmuerzo; registro.Fuentes.Add("Regreso Almuerzo: SEAT"); }
-                    if (registroSeat.HoraSalida.HasValue) { registro.HoraSalida = registroSeat.HoraSalida; registro.Fuentes.Add("Salida: SEAT"); }
+                    if (!marcacionesDelDia.Any()) continue;
+
+                    var registro = CrearRegistroConsolidado(nombreCompletoBio, dia, null, marcacionesDelDia);
+                    resultadoFinal.Add(registro);
                 }
+            }
 
-                if (registrosBiometricoDelDia.Any())
-                {
-                    // CORRECCIÓN: Se usan nombres de variable únicos (hEntrada, hSalidaAlmuerzo, etc.)
-                    if (registro.HoraEntrada == null && registrosBiometricoDelDia.FirstOrDefault(b => b.EsEntrada)?.Hora is DateTime hEntrada) { registro.HoraEntrada = hEntrada; registro.Fuentes.Add("Entrada: Biométrico"); }
-                    if (registro.HoraSalidaAlmuerzo == null && registrosBiometricoDelDia.FirstOrDefault(b => b.EsSalidaAlmuerzo)?.Hora is DateTime hSalidaAlmuerzo) { registro.HoraSalidaAlmuerzo = hSalidaAlmuerzo; registro.Fuentes.Add("Salida Almuerzo: Biométrico"); }
-                    if (registro.HoraRegresoAlmuerzo == null && registrosBiometricoDelDia.FirstOrDefault(b => b.EsLlegadaAlmuerzo)?.Hora is DateTime hRegresoAlmuerzo) { registro.HoraRegresoAlmuerzo = hRegresoAlmuerzo; registro.Fuentes.Add("Regreso Almuerzo: Biométrico"); }
-                    if (registro.HoraSalida == null && registrosBiometricoDelDia.FirstOrDefault(b => b.EsSalida)?.Hora is DateTime hSalida) { registro.HoraSalida = hSalida; registro.Fuentes.Add("Salida: Biométrico"); }
-                }
+            return resultadoFinal.OrderBy(r => r.NombreCompleto).ThenBy(r => r.Fecha).ToList();
+        }
 
+        private RegistroConsolidado CrearRegistroConsolidado(string nombrePrincipal, DateOnly dia, SeatData? registroSeat, List<BiometricoData> marcacionesBio)
+        {
+            var registro = new RegistroConsolidado
+            {
+                NombreCompleto = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(nombrePrincipal.ToLower()),
+                Fecha = dia
+            };
+
+            if (registroSeat != null)
+            {
+                if (registroSeat.HoraEntrada.HasValue) { registro.HoraEntrada = registroSeat.HoraEntrada; registro.Fuentes.Add("Entrada: SEAT"); }
+                if (registroSeat.HoraSalidaAlmuerzo.HasValue) { registro.HoraSalidaAlmuerzo = registroSeat.HoraSalidaAlmuerzo; registro.Fuentes.Add("Salida Almuerzo: SEAT"); }
+                if (registroSeat.HoraRegresoAlmuerzo.HasValue) { registro.HoraRegresoAlmuerzo = registroSeat.HoraRegresoAlmuerzo; registro.Fuentes.Add("Regreso Almuerzo: SEAT"); }
+                if (registroSeat.HoraSalida.HasValue) { registro.HoraSalida = registroSeat.HoraSalida; registro.Fuentes.Add("Salida: SEAT"); }
+            }
+
+            if (marcacionesBio.Any())
+            {
+                if (registro.HoraEntrada == null && marcacionesBio.FirstOrDefault(b => b.EsEntrada)?.Hora is DateTime hEntrada) { registro.HoraEntrada = hEntrada; registro.Fuentes.Add("Entrada: Biométrico"); }
+                if (registro.HoraSalidaAlmuerzo == null && marcacionesBio.FirstOrDefault(b => b.EsSalidaAlmuerzo)?.Hora is DateTime hSalidaAlmuerzo) { registro.HoraSalidaAlmuerzo = hSalidaAlmuerzo; registro.Fuentes.Add("Salida Almuerzo: Biométrico"); }
+                if (registro.HoraRegresoAlmuerzo == null && marcacionesBio.FirstOrDefault(b => b.EsLlegadaAlmuerzo)?.Hora is DateTime hRegresoAlmuerzo) { registro.HoraRegresoAlmuerzo = hRegresoAlmuerzo; registro.Fuentes.Add("Regreso Almuerzo: Biométrico"); }
+                if (registro.HoraSalida == null && marcacionesBio.LastOrDefault(b => b.EsSalida)?.Hora is DateTime hSalida) { registro.HoraSalida = hSalida; registro.Fuentes.Add("Salida: Biométrico"); }
+            }
+
+            if (registro.Fuentes.Any())
+            {
                 if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue) registro.Estado = "Completo";
                 else if (registro.HoraEntrada.HasValue && !registro.HoraSalida.HasValue) registro.Estado = "Falta marcación de Salida";
                 else if (!registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue) registro.Estado = "Falta marcación de Entrada";
                 else registro.Estado = "Registros Incompletos";
-
-                resultadoFinal.Add(registro);
             }
-        }
-        return resultadoFinal.OrderBy(r => r.NombreCompleto).ThenBy(r => r.Fecha).ToList();
-    }
+            else
+            {
+                registro.Estado = "Sin Actividad";
+            }
 
-    private string NormalizeString(string input)
-    {
-        if (string.IsNullOrEmpty(input)) return string.Empty;
-        var normalizedString = input.ToLower().Normalize(NormalizationForm.FormD);
-        var stringBuilder = new StringBuilder();
-        foreach (var c in normalizedString.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
-        {
-            stringBuilder.Append(c);
+            return registro;
         }
-        return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace("  ", " ");
+
+        private int GetMatchScore(string nombreCompleto, string nombreParcial)
+        {
+            var partesParcial = nombreParcial.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            int puntuacion = 0;
+            foreach (var parte in partesParcial)
+            {
+                if (nombreCompleto.Contains(parte))
+                {
+                    puntuacion++;
+                }
+            }
+            return puntuacion;
+        }
+
+        private string NormalizeString(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return string.Empty;
+            var normalizedString = input.ToLower().Normalize(NormalizationForm.FormD);
+            var stringBuilder = new StringBuilder();
+            foreach (var c in normalizedString.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
+            {
+                stringBuilder.Append(c);
+            }
+            return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace("  ", " ").Trim();
+        }
     }
 }
+
+
+//http://localhost:5165/api/reportes/exportar-asistencia?fechaInicioStr=2025-08-18&fechaFinStr=2025-08-22
