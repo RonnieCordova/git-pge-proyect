@@ -37,4 +37,24 @@ public class ReportesController : ControllerBase
         // 3. Devolvemos el archivo para que el usuario lo pueda descargar.
         return File(archivoBytes, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", nombreArchivo);
     }
+
+    [HttpGet("visualizar-asistencia")]
+    public async Task<IActionResult> VisualizarAsistencia([FromQuery] string fechaInicioStr, [FromQuery] string fechaFinStr)
+    {
+        if (!DateOnly.TryParse(fechaInicioStr, out var fechaInicio) || !DateOnly.TryParse(fechaFinStr, out var fechaFin))
+        {
+            return BadRequest("Formato de fecha inválido. Use AAAA-MM-DD.");
+        }
+
+        try
+        {
+            var datosConsolidados = await _unificationService.GenerarReporteConsolidado(fechaInicio, fechaFin);
+            return Ok(datosConsolidados); // Devuelve los datos como JSON
+        }
+        catch (Exception ex)
+        {
+            // En un caso real, aquí se registraría el error
+            return StatusCode(500, "Ocurrió un error interno al procesar la solicitud.");
+        }
+    }
 }

@@ -35,15 +35,15 @@ namespace ef_core.Services
             var resultadoFinal = new List<RegistroConsolidado>();
             var empleadosBiometricoUnicos = todosLosBiometrico.Select(b => new { b.Nombre, b.Apellido }).Distinct().ToList();
             var empleadosSeatUnicos = todosLosSeat.Select(s => new { s.Nombre, s.Apellido }).Distinct().ToList();
-
-            // --- 1. CONSTRUIR EL MAPA DE IDENTIDAD ---
-            var mapaDeNombres = new Dictionary<string, string>(); // Key: Nombre Biometrico, Value: Nombre SEAT
+            
+            var mapaDeNombres = new Dictionary<string, string>();
             var nombresBiometricoMapeados = new HashSet<string>();
 
+            // --- 1. CONSTRUIR EL MAPA DE IDENTIDAD ---
             foreach (var empSeat in empleadosSeatUnicos)
             {
                 string nombreCompletoSeat = NormalizeString(empSeat.Apellido + " " + empSeat.Nombre);
-                string mejorMatchBiometrico = null;
+                string? mejorMatchBiometrico = null;
                 int maxPuntuacion = 0;
 
                 foreach (var empBio in empleadosBiometricoUnicos)
@@ -59,7 +59,7 @@ namespace ef_core.Services
                     }
                 }
 
-                if (mejorMatchBiometrico != null && maxPuntuacion > 1) // Umbral de confianza: deben coincidir al menos 2 palabras
+                if (mejorMatchBiometrico != null && maxPuntuacion > 1)
                 {
                     mapaDeNombres[mejorMatchBiometrico] = nombreCompletoSeat;
                     nombresBiometricoMapeados.Add(mejorMatchBiometrico);
@@ -75,14 +75,14 @@ namespace ef_core.Services
                     string nombreNormalizadoSeat = NormalizeString(nombreCompletoSeat);
 
                     var registroSeatDelDia = todosLosSeat.FirstOrDefault(s => s.Apellido == empSeat.Apellido && s.Nombre == empSeat.Nombre && s.HoraEntrada.HasValue && DateOnly.FromDateTime(s.HoraEntrada.Value) == dia);
-
-                    string nombreBiometricoAsociado = mapaDeNombres.FirstOrDefault(kvp => kvp.Value == nombreNormalizadoSeat).Key;
+                    
+                    string? nombreBiometricoAsociado = mapaDeNombres.FirstOrDefault(kvp => kvp.Value == nombreNormalizadoSeat).Key;
                     var marcacionesBiometricoDelDia = new List<BiometricoData>();
 
-                    if (nombreBiometricoAsociado != null)
+                    if(nombreBiometricoAsociado != null)
                     {
                         marcacionesBiometricoDelDia = todosLosBiometrico
-                            .Where(b => DateOnly.FromDateTime(b.Hora.Value) == dia && NormalizeString(b.Nombre + " " + b.Apellido) == nombreBiometricoAsociado)
+                            .Where(b => b.Hora.HasValue && DateOnly.FromDateTime(b.Hora.Value) == dia && NormalizeString(b.Nombre + " " + b.Apellido) == nombreBiometricoAsociado)
                             .OrderBy(b => b.Hora).ToList();
                     }
 
@@ -101,7 +101,7 @@ namespace ef_core.Services
                 for (var dia = fechaInicio; dia <= fechaFin; dia = dia.AddDays(1))
                 {
                     var marcacionesDelDia = todosLosBiometrico
-                        .Where(b => b.Nombre == empBio.Nombre && b.Apellido == empBio.Apellido && DateOnly.FromDateTime(b.Hora.Value) == dia)
+                        .Where(b => b.Nombre == empBio.Nombre && b.Apellido == empBio.Apellido && b.Hora.HasValue && DateOnly.FromDateTime(b.Hora.Value) == dia)
                         .OrderBy(b => b.Hora).ToList();
 
                     if (!marcacionesDelDia.Any()) continue;
@@ -140,19 +140,18 @@ namespace ef_core.Services
 
             if (registro.Fuentes.Any())
             {
-                if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue) registro.Estado = "Completo";
+                 if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue) registro.Estado = "Completo";
                 else if (registro.HoraEntrada.HasValue && !registro.HoraSalida.HasValue) registro.Estado = "Falta marcación de Salida";
                 else if (!registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue) registro.Estado = "Falta marcación de Entrada";
                 else registro.Estado = "Registros Incompletos";
             }
-            else
-            {
+            else {
                 registro.Estado = "Sin Actividad";
             }
 
             return registro;
         }
-
+        
         private int GetMatchScore(string nombreCompleto, string nombreParcial)
         {
             var partesParcial = nombreParcial.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -167,19 +166,27 @@ namespace ef_core.Services
             return puntuacion;
         }
 
-        private string NormalizeString(string input)
+        // --- FUNCIÓN DE NORMALIZACIÓN CORREGIDA Y DEFINITIVA ---
+        private string NormalizeString(string? input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
-            var normalizedString = input.ToLower().Normalize(NormalizationForm.FormD);
+            
+            // Reemplaza explícitamente la 'ñ' antes de la normalización estándar
+            string replacedN = input.ToLower().Replace('ñ', 'n');
+
+            var normalizedString = replacedN.Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
-            foreach (var c in normalizedString.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark))
+
+            foreach (var c in normalizedString)
             {
-                stringBuilder.Append(c);
+                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                {
+                    stringBuilder.Append(c);
+                }
             }
             return stringBuilder.ToString().Normalize(NormalizationForm.FormC).Replace("  ", " ").Trim();
         }
     }
 }
-
-
 //http://localhost:5165/api/reportes/exportar-asistencia?fechaInicioStr=2025-08-18&fechaFinStr=2025-08-22

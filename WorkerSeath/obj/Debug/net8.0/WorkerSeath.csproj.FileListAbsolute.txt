@@ -298,3 +298,7 @@ C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\obj\Debug\net8.0\refint\
 C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\obj\Debug\net8.0\WorkerSeath.pdb
 C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\obj\Debug\net8.0\WorkerSeath.genruntimeconfig.cache
 C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\obj\Debug\net8.0\ref\WorkerSeath.dll
+C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\ExcelDataReader.dll
+C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\ExcelDataReader.DataSet.dll
+C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\System.Text.Encoding.CodePages.dll
+C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Text.Encoding.CodePages.dll

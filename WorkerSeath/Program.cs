@@ -1,136 +1,126 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Data;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Text.RegularExpressions;
+using System.Text;
 using System.Threading.Tasks;
-using UglyToad.PdfPig;
-using UglyToad.PdfPig.Content;
-using ef_core.DTOs; // Asegúrate de que tu worker tenga referencia a este proyecto
+using ExcelDataReader;
+using ef_core.DTOs;
 
-Console.WriteLine("WorkerSeat (Versión Definitiva por Zonas): Iniciando lectura de PDF...");
+Console.WriteLine("WorkerSeat (Versión Excel): Iniciando lectura de archivo...");
+Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    string pdfPath = @"C:\Users\pguayas1\Documents\pruebas_worker_seat\18 DE AGOSTO AL 22 DE AGOSTO DE 2025.pdf"; // Asegúrate que esta ruta sea correcta
-    string apiUrl = "http://localhost:5165/api/SeatData"; // Asegúrate que el puerto sea el correcto
+    // Asegúrate de que esta ruta apunte a la carpeta con tu nuevo archivo Excel
+    string carpetaReportes = @"C:\Users\LENOVO.USER\Documents\reportes_seat"; 
+    string[] archivosExportados = Directory.GetFiles(carpetaReportes, "*.xlsx")
+                                         .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
+                                         .ToArray();
+
+    if (archivosExportados.Length == 0)
+    {
+        Console.WriteLine("No se encontraron archivos de Excel para procesar.");
+        Console.ReadKey();
+        return;
+    }
+
+    Console.WriteLine($"Se encontraron {archivosExportados.Length} archivos. Procesando...");
 
     using var httpClient = new HttpClient();
-    using var document = PdfDocument.Open(pdfPath);
+    string apiUrl = "http://localhost:5165/api/SeatData"; // Asegúrate que el puerto sea el correcto
 
-    var nameRegex = new Regex(@"^([A-ZÑÁÉÍÓÚ]{2,}(?:\s[A-ZÑÁÉÍÓÚ]{2,})+$)");
-    var dateRegex = new Regex(@"^\d{2}/\d{2}/\d{4}$");
-    var timeRegex = new Regex(@"^\d{2}:\d{2}$");
-
-    foreach (var page in document.GetPages())
+    foreach (string rutaArchivo in archivosExportados)
     {
-        var words = page.GetWords();
-        var employeeBlocks = new List<EmployeeBlock>();
-        var processedLines = new HashSet<double>();
+        using var stream = File.Open(rutaArchivo, FileMode.Open, FileAccess.Read);
+        using var reader = ExcelReaderFactory.CreateReader(stream);
 
-        // 1. IDENTIFICAR TODOS LOS BLOQUES DE EMPLEADOS POR SU POSICIÓN Y
-        foreach (var word in words)
+        var dataSet = reader.AsDataSet(new ExcelDataSetConfiguration()
         {
-            double lineY = Math.Round(word.BoundingBox.Centroid.Y, 2);
-            if (processedLines.Contains(lineY)) continue;
-
-            var lineWords = words.Where(w => Math.Abs(w.BoundingBox.Centroid.Y - lineY) < 2)
-                                 .OrderBy(w => w.BoundingBox.Left);
-            string potentialName = string.Join(" ", lineWords.Select(w => w.Text));
-
-            if (nameRegex.IsMatch(potentialName) && !IsCommonHeader(potentialName))
-            {
-                employeeBlocks.Add(new EmployeeBlock { FullName = potentialName, Y_Position = lineY });
-                processedLines.Add(lineY);
-            }
-        }
+            ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = true } // La primera fila es la cabecera
+        });
         
-        employeeBlocks = employeeBlocks.OrderBy(b => b.Y_Position).ToList();
-        Console.WriteLine($"\n--- Página {page.Number}: Se encontraron {employeeBlocks.Count} bloques de empleados. ---");
+        var dataTable = dataSet.Tables[0];
 
-        // 2. PROCESAR CADA BLOQUE (ZONA) DE EMPLEADO
-        for (int i = 0; i < employeeBlocks.Count; i++)
+        foreach (DataRow row in dataTable.Rows)
         {
-            var currentBlock = employeeBlocks[i];
-            double startY = currentBlock.Y_Position;
-            // La zona termina donde empieza el siguiente empleado, o al final de la página
-            double endY = (i + 1 < employeeBlocks.Count) ? employeeBlocks[i + 1].Y_Position : page.Height;
-
-            var dateWordsInBlock = words
-                .Where(w => dateRegex.IsMatch(w.Text) && w.BoundingBox.Centroid.Y > startY && w.BoundingBox.Centroid.Y < endY)
-                .ToList();
-
-            foreach (var dateWord in dateWordsInBlock)
+            // Validar que la fila tiene los datos mínimos necesarios
+            if (row[0] == DBNull.Value || row[1] == DBNull.Value || !(row[1] is DateTime))
             {
-                string dateStr = dateWord.Text;
-                var wordsInLine = words.Where(w => Math.Abs(w.BoundingBox.Centroid.Y - dateWord.BoundingBox.Centroid.Y) < 2).OrderBy(w => w.BoundingBox.Left).ToList();
-                var timeAndDetailWords = wordsInLine.Skip(1).Select(w => w.Text).ToList();
-                var times = timeAndDetailWords.Where(w => timeRegex.IsMatch(w)).ToList();
-                var details = timeAndDetailWords.Where(w => !timeRegex.IsMatch(w) && !new[] { "P", "T", "M" }.Contains(w)).ToList();
+                continue; // Si no hay nombre de empleado o fecha, se ignora la fila
+            }
 
-                var nameParts = currentBlock.FullName.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                string nombre = "";
-                string apellido = "";
+            string empleadoActual = row[0].ToString() ?? "";
+            DateTime fecha = (DateTime)row[1];
 
-                if (nameParts.Length >= 4) { apellido = $"{nameParts[0]} {nameParts[1]}"; nombre = $"{nameParts[2]} {nameParts[3]}"; }
-                else if (nameParts.Length == 3) { apellido = $"{nameParts[0]} {nameParts[1]}"; nombre = nameParts[2]; }
-                else if (nameParts.Length == 2) { apellido = nameParts[0]; nombre = nameParts[1]; }
-                else { apellido = currentBlock.FullName; }
-                
-                var seatData = new SeatDataDTO
-                {
-                    Nombre = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(nombre.ToLower()),
-                    Apellido = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(apellido.ToLower()),
-                    Detalle = $"Importado desde PDF - {dateStr}"
-                };
+            var nameParts = empleadoActual.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            string nombre = "";
+            string apellido = "";
 
-                if (times.Count > 0) seatData.HoraEntrada = ParseDateTime(dateStr, times[0]);
-                if (times.Count == 2) seatData.HoraSalida = ParseDateTime(dateStr, times[1]);
-                if (times.Count == 3) { seatData.HoraSalidaAlmuerzo = ParseDateTime(dateStr, times[1]); seatData.HoraSalida = ParseDateTime(dateStr, times[2]); }
-                if (times.Count >= 4) { seatData.HoraSalidaAlmuerzo = ParseDateTime(dateStr, times[1]); seatData.HoraRegresoAlmuerzo = ParseDateTime(dateStr, times[2]); seatData.HoraSalida = ParseDateTime(dateStr, times[3]); }
-                if (details.Any()) seatData.Detalle += " - " + string.Join(" ", details);
-                
-                var response = await httpClient.PostAsJsonAsync(apiUrl, seatData);
-                if(response.IsSuccessStatusCode)
-                {
-                    Console.WriteLine($"OK: Registro de {seatData.Apellido}, {seatData.Nombre} para el {dateStr} enviado.");
-                } else {
-                    Console.WriteLine($"ERROR al enviar registro de {seatData.Apellido}, {seatData.Nombre} para el {dateStr}.");
-                }
+            if (nameParts.Length >= 4) { apellido = $"{nameParts[0]} {nameParts[1]}"; nombre = $"{nameParts[2]} {nameParts[3]}"; }
+            else if (nameParts.Length == 3) { apellido = $"{nameParts[0]} {nameParts[1]}"; nombre = nameParts[2]; }
+            else if (nameParts.Length == 2) { apellido = nameParts[0]; nombre = nameParts[1]; }
+            else { apellido = empleadoActual; }
+
+            var seatData = new SeatDataDTO
+            {
+                Nombre = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(nombre.ToLower()),
+                Apellido = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(apellido.ToLower()),
+                Detalle = $"Importado desde Excel - {fecha:dd/MM/yyyy}"
+            };
+
+            // Extraer y combinar fecha con horas
+            seatData.HoraEntrada = CombineDateAndTime(fecha, row[2]);        // Columna "Entrada"
+            seatData.HoraSalidaAlmuerzo = CombineDateAndTime(fecha, row[3]);  // Columna "Salida a Almorzar"
+            seatData.HoraRegresoAlmuerzo = CombineDateAndTime(fecha, row[4]); // Columna "Entrada de Almorzar"
+            seatData.HoraSalida = CombineDateAndTime(fecha, row[5]);          // Columna "Salida"
+
+            var response = await httpClient.PostAsJsonAsync(apiUrl, seatData);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Console.WriteLine($"OK: Registro de {seatData.Apellido}, {seatData.Nombre} para el {fecha:dd/MM/yyyy} enviado.");
+            }
+            else
+            {
+                string errorBody = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"ERROR al enviar registro de {seatData.Apellido}, {seatData.Nombre}: {response.StatusCode} - {errorBody}");
             }
         }
     }
 }
 catch (Exception ex)
 {
-    Console.WriteLine($"ERROR FATAL en WorkerSeat: {ex.Message}\n{ex.StackTrace}");
+    Console.WriteLine($"Ocurrió un error inesperado: {ex.Message}\n{ex.StackTrace}");
 }
 
-Console.WriteLine("\nProceso de lectura de PDF finalizado.");
+Console.WriteLine("\nProcesamiento de archivos del SEAT finalizado.");
 Console.ReadKey();
 
 
 // --- Funciones Auxiliares ---
 
-DateTime? ParseDateTime(string date, string time)
+DateTime? CombineDateAndTime(DateTime date, object timeObject)
 {
-    if (DateTime.TryParseExact($"{date} {time}", "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var result))
+    if (timeObject == DBNull.Value || timeObject == null) return null;
+
+    // ExcelDataReader a menudo lee las horas como DateTime (con fecha 1899) o como TimeSpan
+    if (timeObject is DateTime time)
     {
-        return result;
+        return date.Date + time.TimeOfDay;
     }
+    if (timeObject is TimeSpan timeSpan)
+    {
+        return date.Date + timeSpan;
+    }
+    // Intenta parsear si es un string
+    if (TimeSpan.TryParse(timeObject.ToString(), out var parsedTimeSpan))
+    {
+        return date.Date + parsedTimeSpan;
+    }
+
     return null;
-}
-
-bool IsCommonHeader(string text)
-{
-    var headers = new List<string> { "PROCURADURÍA", "GENERAL DEL ESTADO", "REPUBLICA DEL ECUADOR", "ASISTENCIA POR PROCESO", "DIRECCIÓN REGIONAL", "SECRETARÍA REGIONAL", "Tipo Permiso", "lunch", "Fecha", "Entrada", "Saluda", "Salida", "Modalidad" };
-    return headers.Any(h => text.ToUpper().Contains(h));
-}
-
-public class EmployeeBlock
-{
-    public string FullName { get; set; } = "";
-    public double Y_Position { get; set; }
 }
