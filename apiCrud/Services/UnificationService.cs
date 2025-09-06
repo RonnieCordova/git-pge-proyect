@@ -166,12 +166,11 @@ namespace ef_core.Services
             return puntuacion;
         }
 
-        // --- FUNCIÓN DE NORMALIZACIÓN CORREGIDA Y DEFINITIVA ---
+        // FUNCIÓN DE NORMALIZACIÓN
         private string NormalizeString(string? input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
             
-            // Reemplaza explícitamente la 'ñ' antes de la normalización estándar
             string replacedN = input.ToLower().Replace('ñ', 'n');
 
             var normalizedString = replacedN.Normalize(NormalizationForm.FormD);
