@@ -302,3 +302,7 @@ C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\Exce
 C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\ExcelDataReader.DataSet.dll
 C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\System.Text.Encoding.CodePages.dll
 C:\Users\LENOVO.USER\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Text.Encoding.CodePages.dll
+C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\ExcelDataReader.dll
+C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\ExcelDataReader.DataSet.dll
+C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\System.Text.Encoding.CodePages.dll
+C:\Users\pguayas1\Documents\git-pge-proyect\WorkerSeath\bin\Debug\net8.0\runtimes\win\lib\net8.0\System.Text.Encoding.CodePages.dll

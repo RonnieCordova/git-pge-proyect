@@ -15,7 +15,7 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    string carpetaReportes = @"C:\Users\LENOVO.USER\Documents\reportes_biometrico"; // Asegúrate que esta ruta sea correcta
+    string carpetaReportes = @"C:\Users\pguayas1\Documents\pruebas_worker_biometrico"; // Asegúrate que esta ruta sea correcta
     string[] archivosExportados = Directory.GetFiles(carpetaReportes, "*.xlsx")
                                          .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
                                          .ToArray();

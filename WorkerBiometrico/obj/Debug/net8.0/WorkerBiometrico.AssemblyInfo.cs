@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WorkerBiometrico")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+91ab2e5ad9bd82dfe4aacdbe1968f570a00bc034")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8330a03e0f581b55caf5e0db6174bcb26b5e25bf")]
 [assembly: System.Reflection.AssemblyProductAttribute("WorkerBiometrico")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WorkerBiometrico")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

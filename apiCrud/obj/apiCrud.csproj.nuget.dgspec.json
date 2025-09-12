@@ -1,20 +1,20 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj": {}
+    "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj": {}
   },
   "projects": {
-    "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj": {
+    "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
+        "projectUniqueName": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
         "projectName": "apiCrud",
-        "projectPath": "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
-        "packagesPath": "C:\\Users\\LENOVO.USER\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\LENOVO.USER\\Documents\\git-pge-proyect\\apiCrud\\obj\\",
+        "projectPath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
+        "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
+        "outputPath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\LENOVO.USER\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -89,7 +89,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.414/PortableRuntimeIdentifierGraph.json"
         }
       }
     }
