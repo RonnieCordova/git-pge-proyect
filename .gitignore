@@ -1,0 +1,53 @@
+# Dependencias y Paquetes
+[Pp]ackages/
+*.nupkg
+*.nuget.props
+*.nuget.targets
+
+# Archivos de Build
+[Bb]in/
+[Dd]ebug/
+[Dd]ebug[Pp]ublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+build/
+bld/
+[Oo]bj/
+[Ll]og/
+
+# Archivos específicos del usuario de Visual Studio
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Archivos del IDE (Visual Studio, VS Code, Rider)
+.vs/
+.vscode/
+*.csproj.user
+*.vbproj.user
+.idea/
+
+# Archivos de base de datos local
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Archivos generados por Entity Framework
+*-MigrationHistory.cs
+!Migrations/*-MigrationHistory.cs
+
+# Archivos de publicación
+*.Publish.xml
+*.pubxml
+*.publishproj
+
+# Archivos de sistema operativo
+[Tt]humbs.db
+*.DS_Store
+
+# Archivos de configuración de desarrollo (opcional pero recomendado)
+appsettings.Development.json
