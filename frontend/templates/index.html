@@ -146,6 +146,7 @@
                 <table class="table table-bordered table-striped table-hover">
                     <thead>
                         <tr>
+                            <th>Área</th>
                             <th>Empleado</th>
                             <th>Fecha</th>
                             <th>Entrada</th>
@@ -154,6 +155,7 @@
                             <th>Salida</th>
                             <th>Estado</th>
                             <th>Fuentes</th>
+                            <th>Tipo de permiso</th>
                         </tr>
                     </thead>
                     <tbody id="tablaCuerpo"></tbody>
@@ -226,6 +228,11 @@
             }
         }
 
+        function limpiarFiltro() {
+            document.getElementById('filtroBusqueda').value = '';
+            filtrarTabla();
+        }
+
 
         btnExportar.addEventListener('click', () => {
             const fechaInicio = fechaIniInput.value;
@@ -264,6 +271,7 @@
                 if (registro.estado?.includes('Completo')) estadoClass = 'status-Completo';
 
                 fila.innerHTML = `
+                    <td>${registro.area || ''}</td>
                     <td>${registro.nombreCompleto || ''}</td>
                     <td>${new Date(registro.fecha).toLocaleDateString('es-EC')}</td>
                     <td>${formatTime(registro.horaEntrada)}</td>
@@ -272,6 +280,7 @@
                     <td>${formatTime(registro.horaSalida)}</td>
                     <td class="${estadoClass}">${registro.estado || ''}</td>
                     <td>${registro.fuentes ? registro.fuentes.join(', ') : ''}</td>
+                    <td>${registro.tipoPermiso || ''}</td>
                 `;
                 tablaCuerpo.appendChild(fila);
             });

@@ -19,13 +19,15 @@ public class SeatDataController : ControllerBase
         // 1. Convertir el DTO a la entidad de la base de datos
         var seatData = new SeatData
         {
+            Area = seatDataDto.Area,
             Nombre = seatDataDto.Nombre,
             Apellido = seatDataDto.Apellido,
             HoraEntrada = seatDataDto.HoraEntrada,
             HoraSalidaAlmuerzo = seatDataDto.HoraSalidaAlmuerzo,
             HoraRegresoAlmuerzo = seatDataDto.HoraRegresoAlmuerzo,
             HoraSalida = seatDataDto.HoraSalida,
-            Detalle = seatDataDto.Detalle
+            Detalle = seatDataDto.Detalle,
+            TipoPermiso = seatDataDto.TipoPermiso
         };
 
         // 2. Guardar la entidad en la base de datos

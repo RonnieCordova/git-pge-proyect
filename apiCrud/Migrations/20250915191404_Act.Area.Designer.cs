@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using ef_core.Data;
 
@@ -10,9 +11,11 @@ using ef_core.Data;
 namespace apiCrud.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250915191404_Act.Area")]
+    partial class ActArea
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.8");
@@ -80,9 +83,6 @@ namespace apiCrud.Migrations
                         .HasColumnType("TEXT");
 
                     b.Property<string>("Nombre")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("TipoPermiso")
                         .HasColumnType("TEXT");
 
                     b.HasKey("Id");

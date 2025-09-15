@@ -48,13 +48,15 @@ try
         foreach (DataRow row in dataTable.Rows)
         {
             // Validar que la fila tiene los datos mínimos necesarios
-            if (row[0] == DBNull.Value || row[1] == DBNull.Value || !(row[1] is DateTime))
+            if (row[1] == DBNull.Value || row[2] == DBNull.Value || !(row[2] is DateTime))
             {
                 continue; // Si no hay nombre de empleado o fecha, se ignora la fila
             }
 
-            string empleadoActual = row[0].ToString() ?? "";
-            DateTime fecha = (DateTime)row[1];
+            string area = row[0].ToString() ?? "Sin Área";
+            string empleadoActual = row[1].ToString() ?? "";
+            DateTime fecha = (DateTime)row[2]; // Columna "Fecha"
+            string tipoPermiso = row[8].ToString() ?? "Jornada normal";
 
             var nameParts = empleadoActual.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             string nombre = "";
@@ -67,16 +69,18 @@ try
 
             var seatData = new SeatDataDTO
             {
+                Area = area,
                 Nombre = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(nombre.ToLower()),
                 Apellido = CultureInfo.CurrentCulture.TextInfo.ToTitleCase(apellido.ToLower()),
-                Detalle = $"Importado desde Excel - {fecha:dd/MM/yyyy}"
+                Detalle = $"Importado desde Excel - {fecha:dd/MM/yyyy}",
+                TipoPermiso = tipoPermiso
             };
 
             // Extraer y combinar fecha con horas
-            seatData.HoraEntrada = CombineDateAndTime(fecha, row[2]);        // Columna "Entrada"
-            seatData.HoraSalidaAlmuerzo = CombineDateAndTime(fecha, row[3]);  // Columna "Salida a Almorzar"
-            seatData.HoraRegresoAlmuerzo = CombineDateAndTime(fecha, row[4]); // Columna "Entrada de Almorzar"
-            seatData.HoraSalida = CombineDateAndTime(fecha, row[5]);          // Columna "Salida"
+            seatData.HoraEntrada = CombineDateAndTime(fecha, row[3]);        // Columna "Entrada"
+            seatData.HoraSalidaAlmuerzo = CombineDateAndTime(fecha, row[4]);  // Columna "Salida a Almorzar"
+            seatData.HoraRegresoAlmuerzo = CombineDateAndTime(fecha, row[5]); // Columna "Entrada de Almorzar"
+            seatData.HoraSalida = CombineDateAndTime(fecha, row[6]);          // Columna "Salida"
 
             var response = await httpClient.PostAsJsonAsync(apiUrl, seatData);
 

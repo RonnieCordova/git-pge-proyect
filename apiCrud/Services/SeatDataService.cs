@@ -16,6 +16,7 @@ public class SeatDataService
         // Convertir DTO a la entidad de la base de datos
         var seatData = new SeatData
         {
+            Area = dto.Area,
             Nombre = dto.Nombre,
             Apellido = dto.Apellido,
             HoraEntrada = dto.HoraEntrada,

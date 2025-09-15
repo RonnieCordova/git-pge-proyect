@@ -10,7 +10,8 @@ namespace ef_core.Data // O el namespace que corresponda a tu proyecto
     /// </summary>
     public class RegistroConsolidado
     {
-        public int IdEmpleado { get; set; } // Opcional, si tienes un ID único de empleado.
+        public int IdEmpleado { get; set; }
+        public string? Area { get; set; }
         public string? NombreCompleto { get; set; }
         public DateOnly Fecha { get; set; }
 
@@ -30,6 +31,7 @@ namespace ef_core.Data // O el namespace que corresponda a tu proyecto
         /// Ejemplo: ["Entrada: SEAT", "Salida: Biometrico"].
         /// </summary>
         public List<string> Fuentes { get; set; }
+        public string? TipoPermiso { get; set; }
 
         public RegistroConsolidado()
         {

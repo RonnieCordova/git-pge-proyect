@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("WorkerSeath")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+8330a03e0f581b55caf5e0db6174bcb26b5e25bf")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ce6236301b14713db6748290f8218beb8f5118fd")]
 [assembly: System.Reflection.AssemblyProductAttribute("WorkerSeath")]
 [assembly: System.Reflection.AssemblyTitleAttribute("WorkerSeath")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
