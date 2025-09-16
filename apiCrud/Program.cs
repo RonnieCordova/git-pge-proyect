@@ -1,29 +1,37 @@
-
 using Microsoft.EntityFrameworkCore;
 using ef_core.Data;
 using ef_core.Services;
 using OfficeOpenXml;
 using System.Text.Json.Serialization;
+using utils;
 
 var builder = WebApplication.CreateBuilder(args);
 
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
 // Add services to the container.
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=users.db"));
+
+// --- CONFIGURACIÓN DE BASE DE DATOS ---
+builder.Services.AddDbContext<ApplicationDbContext>(options => 
+    options.UseSqlite("Data Source=users.db")); // Tu configuración de SQLite está correcta.
+
+// --- CONFIGURACIÓN DE CONTROLADORES Y JSON (AQUÍ ESTÁ LA CORRECCIÓN) ---
 builder.Services.AddControllers().AddJsonOptions(options =>
     {
-        // Evita que el serializador de JSON intente convertir zonas horarias.
-        // Trata todas las fechas como vienen.
+        // Se añade el convertidor que fuerza a las fechas a ser tratadas como UTC.
+        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter()); 
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
+
+// --- REGISTRO DE SERVICIOS ---
 builder.Services.AddScoped<BiometricoDataService>();
 builder.Services.AddScoped<SeatDataService>();
 builder.Services.AddScoped<UnificationService>();
 builder.Services.AddScoped<ExcelExportService>();
+
+// --- CONFIGURACIÓN DE CORS ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins",
@@ -49,5 +57,3 @@ app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapControllers();
 app.Run();
-
-

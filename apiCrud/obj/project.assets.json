@@ -4370,11 +4370,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
+      "projectUniqueName": "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
       "projectName": "apiCrud",
-      "projectPath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
+      "projectPath": "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
       "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\obj\\",
+      "outputPath": "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
