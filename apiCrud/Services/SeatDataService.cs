@@ -23,7 +23,8 @@ public class SeatDataService
             HoraSalidaAlmuerzo = dto.HoraSalidaAlmuerzo,
             HoraRegresoAlmuerzo = dto.HoraRegresoAlmuerzo,
             HoraSalida = dto.HoraSalida,
-            Detalle = dto.Detalle
+            Detalle = dto.Detalle,
+            TipoPermiso = dto.TipoPermiso
         };
 
         _context.SeatData.Add(seatData);
