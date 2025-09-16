@@ -9,12 +9,14 @@ public class ReportesController : ControllerBase
 {
     private readonly UnificationService _unificationService;
     private readonly ExcelExportService _excelExportService;
+    private readonly ILogger<ReportesController> _logger;
 
     // Usamos inyección de dependencias para recibir los servicios que necesitamos
-    public ReportesController(UnificationService unificationService, ExcelExportService excelExportService)
+    public ReportesController(UnificationService unificationService, ExcelExportService excelExportService, ILogger<ReportesController> logger)
     {
         _unificationService = unificationService;
         _excelExportService = excelExportService;
+        _logger = logger;
     }
 
     [HttpGet("exportar-asistencia")]
@@ -25,6 +27,13 @@ public class ReportesController : ControllerBase
         {
             return BadRequest("Formato de fecha inválido. Use AAAA-MM-DD.");
         }
+        
+        _logger.LogWarning("--- INICIANDO DIAGNÓSTICO DE FECHAS EN EL CONTROLLER ---");
+        _logger.LogWarning("Fecha de Inicio recibida (string): {Fecha}", fechaInicioStr);
+        _logger.LogWarning("Fecha de Fin recibida (string): {Fecha}", fechaFinStr);
+        _logger.LogWarning("Fecha de Inicio parseada (DateOnly): {Fecha}", fechaInicio);
+        _logger.LogWarning("Fecha de Fin parseada (DateOnly): {Fecha}", fechaFin);
+        _logger.LogWarning("--- LLAMANDO AL SERVICIO DE UNIFICACIÓN ---");
 
         // 1. Llamamos al servicio de unificación para obtener los datos procesados.
         var datosConsolidados = await _unificationService.GenerarReporteConsolidado(fechaInicio, fechaFin);

@@ -232,5 +232,4 @@ namespace ef_core.Services
         }
     }
 }
-
 //http://localhost:5165/api/reportes/exportar-asistencia?fechaInicioStr=2025-08-18&fechaFinStr=2025-08-22

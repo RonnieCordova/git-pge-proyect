@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using ef_core.Data;
 using ef_core.Services;
 using OfficeOpenXml;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,7 +14,12 @@ ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<ApplicationDbContext>(options => options.UseSqlite("Data Source=users.db"));
-builder.Services.AddControllers();
+builder.Services.AddControllers().AddJsonOptions(options =>
+    {
+        // Evita que el serializador de JSON intente convertir zonas horarias.
+        // Trata todas las fechas como vienen.
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddScoped<BiometricoDataService>();
 builder.Services.AddScoped<SeatDataService>();
 builder.Services.AddScoped<UnificationService>();
