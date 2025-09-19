@@ -15,7 +15,10 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    string carpetaReportes = @"C:\Users\pguayas1\Documents\pruebas_worker_biometrico"; // Asegúrate que esta ruta sea correcta
+    string carpetaReportes = @"C:\xampp\htdocs\pruebas_worker_biometrico"; // Asegúrate que esta ruta sea correcta
+//añadido(prueba)
+    string carpetaArchivados = Path.Combine(carpetaReportes, "procesados");
+    Directory.CreateDirectory(carpetaArchivados);
     string[] archivosExportados = Directory.GetFiles(carpetaReportes, "*.xlsx")
                                          .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
                                          .ToArray();
@@ -43,21 +46,21 @@ try
         });
 
         var dataTable = dataSet.Tables[0];
-        
+
         var filasValidas = dataTable.AsEnumerable()
             .Where(row => row[1] != DBNull.Value && !string.IsNullOrEmpty(row[1].ToString()) &&
                           row[0] != DBNull.Value && row[0] is DateTime);
 
         var registrosAgrupados = filasValidas.GroupBy(row => new
-            {
-                IdUsuario = row[1].ToString(),
-                Fecha = ((DateTime)row[0]).Date
-            });
+        {
+            IdUsuario = row[1].ToString(),
+            Fecha = ((DateTime)row[0]).Date
+        });
 
         foreach (var grupo in registrosAgrupados)
         {
             var marcacionesDelDia = grupo.OrderBy(row => (DateTime)row[0]).ToList();
-            
+
             var marcacionesAlmuerzo = marcacionesDelDia
                 .Where(m => ((DateTime)m[0]).TimeOfDay >= new TimeSpan(12, 30, 0) &&
                               ((DateTime)m[0]).TimeOfDay < new TimeSpan(15, 0, 0))
@@ -106,7 +109,7 @@ try
                 };
 
                 var response = await httpClient.PostAsJsonAsync(apiUrl, biometricoDataDto);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     Console.WriteLine($"OK: Registro de {nombre} {apellido} a las {horaEvento} enviado.");
@@ -119,6 +122,18 @@ try
             }
         }
         Console.WriteLine($"Archivo {Path.GetFileName(rutaArchivo)} procesado.");
+        //añadido(prueba)
+        try
+        {
+            string nombreArchivo = Path.GetFileName(rutaArchivo);
+            string rutaDestino = Path.Combine(carpetaArchivados, nombreArchivo);
+            File.Move(rutaArchivo, rutaDestino);
+            Console.WriteLine($"Archivo '{nombreArchivo}' movido a la carpeta de procesados.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR: No se pudo mover el archivo {Path.GetFileName(rutaArchivo)}. Detalles: {ex.Message}");
+        }
     }
 }
 catch (Exception ex)

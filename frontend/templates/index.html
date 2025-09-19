@@ -222,7 +222,7 @@
             const filas = tablaCuerpo.getElementsByTagName('tr');
 
             for (let i = 0; i < filas.length; i++) {
-                const celdaNombre = filas[i].getElementsByTagName('td')[0];
+                const celdaNombre = filas[i].getElementsByTagName('td')[1];
                 if (celdaNombre) {
                     const textoNombre = celdaNombre.textContent || celdaNombre.innerText;
                     filas[i].style.display = textoNombre.toLowerCase().includes(filtro) ? '' : 'none';
@@ -266,6 +266,19 @@
                     return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false });
                 };
 
+                const formatDate = (dateString) => {
+                    if (!dateString) return '';
+                    // 1. Tomamos solo la parte de la fecha (ej: "2025-08-18")
+                    const datePart = dateString.split('T')[0];
+                    // 2. Separamos año, mes y día
+                    const [year, month, day] = datePart.split('-');
+                    // 3. Creamos una nueva fecha que JS interpreta como local.
+                    //    El mes es -1 porque en JavaScript los meses van de 0 a 11.
+                    const localDate = new Date(year, month - 1, day);
+                    // 4. Se formatea a la zona horaria de Ecuador (es-EC) para asegurar consistencia
+                    return localDate.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil' });
+                };
+
                 let estadoClass = '';
                 if (registro.estado?.includes('Atraso')) estadoClass = 'status-Atraso';
                 if (registro.estado?.includes('Falta')) estadoClass = 'status-Falta';
@@ -275,7 +288,7 @@
                 fila.innerHTML = `
                     <td>${registro.area || ''}</td>
                     <td>${registro.nombreCompleto || ''}</td>
-                    <td>${new Date(registro.fecha).toLocaleDateString('es-EC')}</td>
+                    <td>${formatDate(registro.fecha)}</td>
                     <td>${formatTime(registro.horaEntrada)}</td>
                     <td>${formatTime(registro.horaSalidaAlmuerzo)}</td>
                     <td>${formatTime(registro.horaRegresoAlmuerzo)}</td>

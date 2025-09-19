@@ -16,7 +16,7 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 try
 {
     // Asegúrate de que esta ruta apunte a la carpeta con tu nuevo archivo Excel
-    string carpetaReportes = @"C:\Users\pguayas1\Documents\pruebas_worker_seat"; 
+    string carpetaReportes = @"C:\xampp\htdocs\pruebas_worker_seat"; 
     string[] archivosExportados = Directory.GetFiles(carpetaReportes, "*.xlsx")
                                          .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
                                          .ToArray();

@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Oo9umz3XAaA=",
+  "dgSpecHash": "kgA33meX9o0=",
   "success": true,
-  "projectFilePath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\WorkerBiometrico\\WorkerBiometrico.csproj",
+  "projectFilePath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerBiometrico\\WorkerBiometrico.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pguayas1\\.nuget\\packages\\epplus\\6.2.10\\epplus.6.2.10.nupkg.sha512",
     "C:\\Users\\pguayas1\\.nuget\\packages\\epplus.interfaces\\6.1.1\\epplus.interfaces.6.1.1.nupkg.sha512",
