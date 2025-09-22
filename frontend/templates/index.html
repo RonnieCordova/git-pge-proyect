@@ -180,6 +180,7 @@
         const btnExportar = document.getElementById('btnExportar');
         const fechaIniInput = document.getElementById('fecha_ini');
         const fechaFinInput = document.getElementById('fecha_fin');
+        const filtroNombreInput = document.getElementById('filtroBusqueda');
         const tablaResultados = document.getElementById('tablaResultados');
         const tablaCuerpo = document.getElementById('tablaCuerpo');
         const emptyState = document.getElementById('emptyState');
@@ -239,13 +240,14 @@
         btnExportar.addEventListener('click', () => {
             const fechaInicio = fechaIniInput.value;
             const fechaFin = fechaFinInput.value;
+            const filtroNombre = filtroNombreInput.value;
 
             if (!fechaInicio || !fechaFin) {
                 alert('Las fechas seleccionadas no son válidas.');
                 return;
             }
 
-            const url = `${API_BASE_URL}/api/reportes/exportar-asistencia?fechaInicioStr=${fechaInicio}&fechaFinStr=${fechaFin}`;
+            const url = `${API_BASE_URL}/api/reportes/exportar-asistencia?fechaInicioStr=${fechaInicio}&fechaFinStr=${fechaFin}&filtroNombre=${filtroNombre}`;
             window.location.href = url;
         });
 

@@ -10,16 +10,18 @@ using System.Threading.Tasks;
 using ExcelDataReader;
 using ef_core.DTOs;
 
-Console.WriteLine("WorkerSeat (Versión Excel): Iniciando lectura de archivo...");
+Console.WriteLine("WorkerSeat: Iniciando lectura de archivo...");
 Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    // Asegúrate de que esta ruta apunte a la carpeta con tu nuevo archivo Excel
-    string carpetaReportes = @"C:\xampp\htdocs\pruebas_worker_seat"; 
+    string carpetaReportes = @"C:\xampp\htdocs\pruebas_worker_seat";
+    string carpetaArchivados = Path.Combine(carpetaReportes, "procesados");
+    Directory.CreateDirectory(carpetaArchivados);
+
     string[] archivosExportados = Directory.GetFiles(carpetaReportes, "*.xlsx")
-                                         .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
-                                         .ToArray();
+                                       .Union(Directory.GetFiles(carpetaReportes, "*.xls"))
+                                       .ToArray();
 
     if (archivosExportados.Length == 0)
     {
@@ -31,31 +33,47 @@ try
     Console.WriteLine($"Se encontraron {archivosExportados.Length} archivos. Procesando...");
 
     using var httpClient = new HttpClient();
-    string apiUrl = "http://localhost:5165/api/SeatData"; // Asegúrate que el puerto sea el correcto
+    string apiUrl = "http://localhost:5165/api/SeatData";
 
     foreach (string rutaArchivo in archivosExportados)
     {
-        using var stream = File.Open(rutaArchivo, FileMode.Open, FileAccess.Read);
-        using var reader = ExcelReaderFactory.CreateReader(stream);
+        DataTable dataTable;
 
-        var dataSet = reader.AsDataSet(new ExcelDataSetConfiguration()
+        try
         {
-            ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = true } // La primera fila es la cabecera
-        });
-        
-        var dataTable = dataSet.Tables[0];
+            using (var stream = File.Open(rutaArchivo, FileMode.Open, FileAccess.Read))
+            using (var reader = ExcelReaderFactory.CreateReader(stream))
+            {
+                var dataSet = reader.AsDataSet(new ExcelDataSetConfiguration()
+                {
+                    ConfigureDataTable = (_) => new ExcelDataTableConfiguration() { UseHeaderRow = true }
+                });
+                dataTable = dataSet.Tables[0];
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR al leer el archivo {Path.GetFileName(rutaArchivo)}: {ex.Message}");
+            continue;
+        }
 
         foreach (DataRow row in dataTable.Rows)
         {
-            // Validar que la fila tiene los datos mínimos necesarios
-            if (row[1] == DBNull.Value || row[2] == DBNull.Value || !(row[2] is DateTime))
+            // Se valida que las celdas de nombre y fecha no estén vacías.
+            if (row[1] == DBNull.Value || row[2] == DBNull.Value || string.IsNullOrEmpty(row[2].ToString()))
             {
-                continue; // Si no hay nombre de empleado o fecha, se ignora la fila
+                continue;
             }
 
+            // Se intenta convertir la celda de la fecha a un objeto DateTime.
+            // Si no se puede, se ignora la fila y se pasa a la siguiente.
+            if (!DateTime.TryParse(row[2].ToString(), out DateTime fecha))
+            {
+                continue;
+            }
+        
             string area = row[0].ToString() ?? "Sin Área";
             string empleadoActual = row[1].ToString() ?? "";
-            DateTime fecha = (DateTime)row[2]; // Columna "Fecha"
             string tipoPermiso = row[8].ToString() ?? "Jornada normal";
 
             var nameParts = empleadoActual.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
@@ -76,23 +94,32 @@ try
                 TipoPermiso = tipoPermiso
             };
 
-            // Extraer y combinar fecha con horas
-            seatData.HoraEntrada = CombineDateAndTime(fecha, row[3]);        // Columna "Entrada"
-            seatData.HoraSalidaAlmuerzo = CombineDateAndTime(fecha, row[4]);  // Columna "Salida a Almorzar"
-            seatData.HoraRegresoAlmuerzo = CombineDateAndTime(fecha, row[5]); // Columna "Entrada de Almorzar"
-            seatData.HoraSalida = CombineDateAndTime(fecha, row[6]);          // Columna "Salida"
+            seatData.HoraEntrada = CombineDateAndTime(fecha, row[3]);
+            seatData.HoraSalidaAlmuerzo = CombineDateAndTime(fecha, row[4]);
+            seatData.HoraRegresoAlmuerzo = CombineDateAndTime(fecha, row[5]);
+            seatData.HoraSalida = CombineDateAndTime(fecha, row[6]);
 
             var response = await httpClient.PostAsJsonAsync(apiUrl, seatData);
 
-            if (response.IsSuccessStatusCode)
-            {
-                Console.WriteLine($"OK: Registro de {seatData.Apellido}, {seatData.Nombre} para el {fecha:dd/MM/yyyy} enviado.");
-            }
-            else
+            if (!response.IsSuccessStatusCode)
             {
                 string errorBody = await response.Content.ReadAsStringAsync();
                 Console.WriteLine($"ERROR al enviar registro de {seatData.Apellido}, {seatData.Nombre}: {response.StatusCode} - {errorBody}");
             }
+        }
+        
+        Console.WriteLine($"Archivo {Path.GetFileName(rutaArchivo)} procesado.");
+
+        try
+        {
+            string nombreArchivo = Path.GetFileName(rutaArchivo);
+            string rutaDestino = Path.Combine(carpetaArchivados, nombreArchivo);
+            File.Move(rutaArchivo, rutaDestino);
+            Console.WriteLine($"--> Archivo '{nombreArchivo}' movido a la carpeta de procesados.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"ERROR: No se pudo mover el archivo {Path.GetFileName(rutaArchivo)}. Detalles: {ex.Message}");
         }
     }
 }
@@ -105,26 +132,27 @@ Console.WriteLine("\nProcesamiento de archivos del SEAT finalizado.");
 Console.ReadKey();
 
 
-// --- Funciones Auxiliares ---
-
 DateTime? CombineDateAndTime(DateTime date, object timeObject)
 {
     if (timeObject == DBNull.Value || timeObject == null) return null;
+    DateTime combined;
 
-    // ExcelDataReader a menudo lee las horas como DateTime (con fecha 1899) o como TimeSpan
     if (timeObject is DateTime time)
     {
-        return date.Date + time.TimeOfDay;
+        combined = date.Date + time.TimeOfDay;
     }
-    if (timeObject is TimeSpan timeSpan)
+    else if (timeObject is TimeSpan timeSpan)
     {
-        return date.Date + timeSpan;
+        combined = date.Date + timeSpan;
     }
-    // Intenta parsear si es un string
-    if (TimeSpan.TryParse(timeObject.ToString(), out var parsedTimeSpan))
+    else if (TimeSpan.TryParse(timeObject.ToString(), out var parsedTimeSpan))
     {
-        return date.Date + parsedTimeSpan;
+        combined = date.Date + parsedTimeSpan;
     }
-
-    return null;
+    else
+    {
+        return null;
+    }
+    
+    return TimeZoneInfo.ConvertTimeToUtc(combined);
 }

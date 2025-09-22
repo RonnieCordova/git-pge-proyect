@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "hFT7xr2EH8k=",
+  "dgSpecHash": "uAqIOk40x1A=",
   "success": true,
-  "projectFilePath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
+  "projectFilePath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\pguayas1\\.nuget\\packages\\epplus\\6.2.10\\epplus.6.2.10.nupkg.sha512",
     "C:\\Users\\pguayas1\\.nuget\\packages\\epplus.interfaces\\6.1.1\\epplus.interfaces.6.1.1.nupkg.sha512",

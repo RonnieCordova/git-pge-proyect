@@ -6559,11 +6559,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
+      "projectUniqueName": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
       "projectName": "WorkerSeath",
-      "projectPath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
+      "projectPath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
       "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\WorkerSeath\\obj\\",
+      "outputPath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerSeath\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -6578,8 +6578,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj": {
-              "projectPath": "C:\\Users\\pguayas1\\Documents\\git-pge-proyect\\apiCrud\\apiCrud.csproj"
+            "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\apiCrud.csproj": {
+              "projectPath": "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\apiCrud.csproj"
             }
           }
         }
