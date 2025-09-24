@@ -11,12 +11,14 @@ using System.Threading.Tasks;
 namespace ef_core.Services
 {
     /// <summary>
-    /// Servicio encargado de consolidar los registros de asistencia de dos fuentes distintas:
-    /// el sistema SEAT y el sistema Biométrico.
+    /// Servicio que consolida registros de asistencia y aplica reglas de negocio complejas,
+    /// incluyendo la gestión de diferentes tipos de permisos.
     /// </summary>
     public class UnificationService
     {
         private readonly ApplicationDbContext _dbContext;
+        private static readonly TimeSpan HoraDeEntradaOficial = new TimeSpan(8, 30, 0);
+        private static readonly TimeSpan VentanaToleranciaEntrada = new TimeSpan(0, 15, 0);
 
         public UnificationService(ApplicationDbContext dbContext)
         {
@@ -24,23 +26,15 @@ namespace ef_core.Services
         }
 
         /// <summary>
-        /// Genera un reporte consolidado de asistencia para un rango de fechas específico.
-        /// Este método es robusto contra problemas de zona horaria al forzar todas las
-        /// comparaciones de fecha a realizarse en UTC.
+        /// Genera un reporte consolidado de asistencia para un rango de fechas.
         /// </summary>
-        /// <param name="fechaInicio">La fecha de inicio del reporte (inclusiva).</param>
-        /// <param name="fechaFin">La fecha de fin del reporte (inclusiva).</param>
-        /// <returns>Una lista de registros de asistencia consolidados.</returns>
         public async Task<List<RegistroConsolidado>> GenerarReporteConsolidado(DateOnly fechaInicio, DateOnly fechaFin)
         {
-            // 1. ESTABLECER RANGO DE FECHAS EN UTC PARA LA CONSULTA A LA BASE DE DATOS
-            // Se crea un rango explícito en UTC para evitar conversiones de zona horaria inesperadas.
-            // El rango es inclusivo para la fecha de inicio y exclusivo para la fecha de fin.
+            // 1. OBTENCIÓN DE DATOS CRUDOS EN UTC
             var inicioDtUtc = new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, DateTimeKind.Utc);
             var finExclusivo = fechaFin.AddDays(1);
             var finDtUtc = new DateTime(finExclusivo.Year, finExclusivo.Month, finExclusivo.Day, 0, 0, 0, DateTimeKind.Utc);
 
-            // Se obtienen todos los registros relevantes de la base de datos dentro del rango UTC.
             var todosLosSeat = await _dbContext.SeatData
                 .Where(s => s.HoraEntrada.HasValue && s.HoraEntrada >= inicioDtUtc && s.HoraEntrada < finDtUtc)
                 .ToListAsync();
@@ -49,46 +43,13 @@ namespace ef_core.Services
                 .Where(b => b.Hora.HasValue && b.Hora >= inicioDtUtc && b.Hora < finDtUtc)
                 .ToListAsync();
 
-            // 2. PREPARACIÓN PARA LA UNIFICACIÓN
+            // 2. PREPARACIÓN Y PROCESAMIENTO
             var resultadoFinal = new List<RegistroConsolidado>();
-            var empleadosBiometricoUnicos = todosLosBiometrico.Select(b => new { b.Nombre, b.Apellido }).Distinct().ToList();
             var empleadosSeatUnicos = todosLosSeat.Select(s => new { s.Nombre, s.Apellido }).Distinct().ToList();
-            
-            // Diccionario para mapear nombres del biométrico (clave) a nombres del SEAT (valor).
-            var mapaDeNombres = new Dictionary<string, string>();
-            var nombresBiometricoMapeados = new HashSet<string>();
+            var mapaDeNombres = ConstruirMapaDeIdentidad(empleadosSeatUnicos, todosLosBiometrico);
 
-            // 3. CONSTRUCCIÓN DEL MAPA DE IDENTIDAD
-            // Se comparan los nombres de ambas fuentes para encontrar coincidencias y unificar identidades.
-            foreach (var empSeat in empleadosSeatUnicos)
-            {
-                string nombreCompletoSeat = NormalizeString(empSeat.Apellido + " " + empSeat.Nombre);
-                string? mejorMatchBiometrico = null;
-                int maxPuntuacion = 0;
-                foreach (var empBio in empleadosBiometricoUnicos)
-                {
-                    string nombreCompletoBio = NormalizeString(empBio.Nombre + " " + empBio.Apellido);
-                    if (nombresBiometricoMapeados.Contains(nombreCompletoBio)) continue;
-                    
-                    int puntuacionActual = GetMatchScore(nombreCompletoSeat, nombreCompletoBio);
-                    if (puntuacionActual > maxPuntuacion)
-                    {
-                        maxPuntuacion = puntuacionActual;
-                        mejorMatchBiometrico = nombreCompletoBio;
-                    }
-                }
-                if (mejorMatchBiometrico != null && maxPuntuacion > 1)
-                {
-                    mapaDeNombres[mejorMatchBiometrico] = nombreCompletoSeat;
-                    nombresBiometricoMapeados.Add(mejorMatchBiometrico);
-                }
-            }
-
-            // 4. PROCESAMIENTO Y CONSOLIDACIÓN DE REGISTROS
-            // Se itera sobre cada día y cada empleado para construir el registro consolidado.
             for (var dia = fechaInicio; dia <= fechaFin; dia = dia.AddDays(1))
             {
-                // Se define el rango UTC para el día específico que se está procesando.
                 var inicioDelDiaUtc = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
                 var finDelDiaUtc = inicioDelDiaUtc.AddDays(1);
 
@@ -97,7 +58,6 @@ namespace ef_core.Services
                     string nombreCompletoSeat = (empSeat.Apellido + " " + empSeat.Nombre).Trim();
                     string nombreNormalizadoSeat = NormalizeString(nombreCompletoSeat);
 
-                    // Se buscan los registros del día actual comparando dentro del rango UTC en la lista ya cargada en memoria.
                     var registroSeatDelDia = todosLosSeat.FirstOrDefault(s =>
                         s.Apellido == empSeat.Apellido && s.Nombre == empSeat.Nombre &&
                         s.HoraEntrada.HasValue &&
@@ -117,41 +77,18 @@ namespace ef_core.Services
 
                     if (registroSeatDelDia == null && !marcacionesBiometricoDelDia.Any()) continue;
 
-                    var registro = CrearRegistroConsolidado(nombreCompletoSeat, dia, registroSeatDelDia, marcacionesBiometricoDelDia);
+                    var registro = ProcesarDiaDeEmpleado(nombreCompletoSeat, dia, registroSeatDelDia, marcacionesBiometricoDelDia);
                     resultadoFinal.Add(registro);
                 }
             }
-
-            // 5. PROCESAMIENTO DE EMPLEADOS QUE SOLO EXISTEN EN EL BIOMÉTRICO
-            var empleadosSoloBiometrico = empleadosBiometricoUnicos.Where(emp => !nombresBiometricoMapeados.Contains(NormalizeString(emp.Nombre + " " + emp.Apellido)));
-            foreach (var empBio in empleadosSoloBiometrico)
-            {
-                string nombreCompletoBio = (empBio.Nombre + " " + empBio.Apellido).Trim();
-                for (var dia = fechaInicio; dia <= fechaFin; dia = dia.AddDays(1))
-                {
-                    var inicioDelDiaUtc = new DateTime(dia.Year, dia.Month, dia.Day, 0, 0, 0, DateTimeKind.Utc);
-                    var finDelDiaUtc = inicioDelDiaUtc.AddDays(1);
-
-                    var marcacionesDelDia = todosLosBiometrico
-                        .Where(b => b.Nombre == empBio.Nombre && b.Apellido == empBio.Apellido &&
-                                    b.Hora.HasValue &&
-                                    b.Hora.Value >= inicioDelDiaUtc && b.Hora.Value < finDelDiaUtc)
-                        .OrderBy(b => b.Hora).ToList();
-
-                    if (!marcacionesDelDia.Any()) continue;
-
-                    var registro = CrearRegistroConsolidado(nombreCompletoBio, dia, null, marcacionesDelDia);
-                    resultadoFinal.Add(registro);
-                }
-            }
-
+            
             return resultadoFinal.OrderBy(r => r.NombreCompleto).ThenBy(r => r.Fecha).ToList();
         }
 
         /// <summary>
-        /// Crea un único objeto <see cref="RegistroConsolidado"/> a partir de los datos de SEAT y Biométrico para un día específico.
+        /// Método principal que orquesta la aplicación de reglas de negocio para un empleado en un día.
         /// </summary>
-        private RegistroConsolidado CrearRegistroConsolidado(string nombrePrincipal, DateOnly dia, SeatData? registroSeat, List<BiometricoData> marcacionesBio)
+        private RegistroConsolidado ProcesarDiaDeEmpleado(string nombrePrincipal, DateOnly dia, SeatData? registroSeat, List<BiometricoData> marcacionesBio)
         {
             var registro = new RegistroConsolidado
             {
@@ -161,39 +98,193 @@ namespace ef_core.Services
                 TipoPermiso = registroSeat?.TipoPermiso
             };
 
-            if (registroSeat != null)
-            {
-                if (registroSeat.HoraEntrada.HasValue) { registro.HoraEntrada = registroSeat.HoraEntrada; registro.Fuentes.Add("Entrada: SIATH"); }
-                if (registroSeat.HoraSalidaAlmuerzo.HasValue) { registro.HoraSalidaAlmuerzo = registroSeat.HoraSalidaAlmuerzo; registro.Fuentes.Add("Salida Almuerzo: SIATH"); }
-                if (registroSeat.HoraRegresoAlmuerzo.HasValue) { registro.HoraRegresoAlmuerzo = registroSeat.HoraRegresoAlmuerzo; registro.Fuentes.Add("Regreso Almuerzo: SIATH"); }
-                if (registroSeat.HoraSalida.HasValue) { registro.HoraSalida = registroSeat.HoraSalida; registro.Fuentes.Add("Salida: SIATH"); }
-            }
+            var permiso = IdentificarTipoPermiso(registro.TipoPermiso);
 
-            if (marcacionesBio.Any())
-            {
-                if (registro.HoraEntrada == null && marcacionesBio.FirstOrDefault(b => b.EsEntrada)?.Hora is DateTime hEntrada) { registro.HoraEntrada = hEntrada; registro.Fuentes.Add("Entrada: Biométrico"); }
-                if (registro.HoraSalidaAlmuerzo == null && marcacionesBio.FirstOrDefault(b => b.EsSalidaAlmuerzo)?.Hora is DateTime hSalidaAlmuerzo) { registro.HoraSalidaAlmuerzo = hSalidaAlmuerzo; registro.Fuentes.Add("Salida Almuerzo: Biométrico"); }
-                if (registro.HoraRegresoAlmuerzo == null && marcacionesBio.FirstOrDefault(b => b.EsLlegadaAlmuerzo)?.Hora is DateTime hRegresoAlmuerzo) { registro.HoraRegresoAlmuerzo = hRegresoAlmuerzo; registro.Fuentes.Add("Regreso Almuerzo: Biométrico"); }
-                if (registro.HoraSalida == null && marcacionesBio.LastOrDefault(b => b.EsSalida)?.Hora is DateTime hSalida) { registro.HoraSalida = hSalida; registro.Fuentes.Add("Salida: Biométrico"); }
-            }
+            var todasLasMarcaciones = marcacionesBio.Select(m => m.Hora.Value)
+                .Union(registroSeat != null ? new[] { registroSeat.HoraEntrada, registroSeat.HoraSalidaAlmuerzo, registroSeat.HoraRegresoAlmuerzo, registroSeat.HoraSalida }.Where(h => h.HasValue).Select(h => h.Value) : Enumerable.Empty<DateTime>())
+                .Distinct().OrderBy(h => h).ToList();
 
-            if (registro.Fuentes.Any())
+            // REGLA DE PRIORIDAD #1: Si existe un permiso, se usa la lógica de permisos.
+            if (permiso != PermisoTipo.Ninguno)
             {
-                if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue) registro.Estado = "Completo";
-                else if (registro.HoraEntrada.HasValue && !registro.HoraSalida.HasValue) registro.Estado = "Falta marcación de Salida";
-                else if (!registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue) registro.Estado = "Falta marcación de Entrada";
-                else registro.Estado = "Registros Incompletos";
+                AplicarLogicaDePermiso(registro, todasLasMarcaciones, permiso);
             }
+            // REGLA DE PRIORIDAD #2: Si no hay permiso, se usa la lógica estándar.
             else
             {
-                registro.Estado = "Sin Actividad";
+                AplicarLogicaEstandar(registro, registroSeat, marcacionesBio);
+            }
+
+            // Se determina el estado final del registro.
+            if (string.IsNullOrEmpty(registro.Estado))
+            {
+                if (!registro.HoraEntrada.HasValue && !registro.HoraSalida.HasValue)
+                {
+                    registro.Estado = "Sin Actividad";
+                }
+                else if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue)
+                {
+                    registro.Estado = "Completo";
+                }
+                else
+                {
+                    registro.Estado = "Registros Incompletos";
+                }
             }
 
             return registro;
         }
 
         /// <summary>
-        /// Calcula una puntuación de coincidencia entre dos nombres para determinar si pertenecen a la misma persona.
+        /// Aplica la lógica de negocio cuando se detecta un permiso especial que altera la jornada.
+        /// </summary>
+        private void AplicarLogicaDePermiso(RegistroConsolidado registro, List<DateTime> todasLasMarcaciones, PermisoTipo permiso)
+        {
+            if (!todasLasMarcaciones.Any()) return;
+
+            registro.HoraEntrada = todasLasMarcaciones.First();
+            registro.Fuentes.Add("Entrada: Registrada");
+
+            // Para el permiso "Oficial", cualquier segunda marcación es la salida final.
+            if (permiso == PermisoTipo.Oficial)
+            {
+                if (todasLasMarcaciones.Count > 1)
+                {
+                    registro.HoraSalida = todasLasMarcaciones.Skip(1).First();
+                    registro.Fuentes.Add("Salida: Registrada (Permiso Oficial)");
+                    registro.Estado = $"Jornada completada por permiso '{registro.TipoPermiso}'";
+                }
+                else
+                {
+                     registro.Estado = $"Entrada registrada, salida por permiso oficial pendiente";
+                }
+                return;
+            }
+
+            // Para otros permisos (Asuntos Personales, Cita Médica, etc.)
+            // La última marcación del día se considera la salida final.
+            if (todasLasMarcaciones.Count > 1)
+            {
+                registro.HoraSalida = todasLasMarcaciones.Last();
+                registro.Fuentes.Add("Salida: Registrada (Permiso)");
+                
+                var duracionJornada = registro.HoraSalida.Value - registro.HoraEntrada.Value;
+                registro.Estado = $"Jornada con permiso '{registro.TipoPermiso}' ({duracionJornada.Hours}h {duracionJornada.Minutes}m)";
+            }
+            else
+            {
+                registro.Estado = $"Entrada registrada, salida por permiso pendiente";
+            }
+        }
+        
+        /// <summary>
+        /// Aplica la lógica estándar de unificación, incluyendo la reconciliación de horas de entrada.
+        /// </summary>
+        private void AplicarLogicaEstandar(RegistroConsolidado registro, SeatData? registroSeat, List<BiometricoData> marcacionesBio)
+        {
+            var horaEntradaSiath = registroSeat?.HoraEntrada;
+            var horaEntradaBio = marcacionesBio.FirstOrDefault(b => b.EsEntrada)?.Hora;
+            registro.HoraEntrada = ReconciliarHoraEntrada(horaEntradaSiath, horaEntradaBio, registro.Fuentes);
+
+            var marcacionesAlmuerzo = marcacionesBio.Where(m => m.EsSalidaAlmuerzo || m.EsLlegadaAlmuerzo).OrderBy(m => m.Hora).ToList();
+            
+            registro.HoraSalidaAlmuerzo = registroSeat?.HoraSalidaAlmuerzo ?? marcacionesAlmuerzo.FirstOrDefault(m => m.EsSalidaAlmuerzo)?.Hora;
+            registro.HoraRegresoAlmuerzo = registroSeat?.HoraRegresoAlmuerzo ?? marcacionesAlmuerzo.FirstOrDefault(m => m.EsLlegadaAlmuerzo)?.Hora;
+            registro.HoraSalida = registroSeat?.HoraSalida ?? marcacionesBio.LastOrDefault(b => b.EsSalida)?.Hora;
+            
+            if (registroSeat?.HoraSalidaAlmuerzo != null) registro.Fuentes.Add("Salida Almuerzo: SIATH");
+            else if (marcacionesAlmuerzo.Any(m => m.EsSalidaAlmuerzo)) registro.Fuentes.Add("Salida Almuerzo: Biométrico");
+            
+            if (registroSeat?.HoraRegresoAlmuerzo != null) registro.Fuentes.Add("Regreso Almuerzo: SIATH");
+            else if (marcacionesAlmuerzo.Any(m => m.EsLlegadaAlmuerzo)) registro.Fuentes.Add("Regreso Almuerzo: Biométrico");
+
+            if (registroSeat?.HoraSalida != null) registro.Fuentes.Add("Salida: SIATH");
+            else if (marcacionesBio.Any(b => b.EsSalida)) registro.Fuentes.Add("Salida: Biométrico");
+        }
+
+        /// <summary>
+        /// Determina la hora de entrada oficial basándose en las reglas de negocio.
+        /// </summary>
+        private DateTime? ReconciliarHoraEntrada(DateTime? horaSiath, DateTime? horaBio, List<string> fuentes)
+        {
+            if (!horaSiath.HasValue && !horaBio.HasValue) return null;
+            if (!horaSiath.HasValue) { fuentes.Add("Entrada: Biométrico"); return horaBio; }
+            if (!horaBio.HasValue) { fuentes.Add("Entrada: SIATH"); return horaSiath; }
+
+            var timeSiath = horaSiath.Value.TimeOfDay;
+            var timeBio = horaBio.Value.TimeOfDay;
+
+            if (timeSiath > HoraDeEntradaOficial.Add(VentanaToleranciaEntrada) && timeBio <= HoraDeEntradaOficial.Add(VentanaToleranciaEntrada))
+            {
+                fuentes.Add("Entrada: Biométrico (Priorizado)");
+                return horaBio;
+            }
+
+            fuentes.Add("Entrada: SIATH (Priorizado)");
+            return horaSiath;
+        }
+        
+        /// <summary>
+        /// Enum para representar los tipos de permiso de forma estructurada.
+        /// </summary>
+        private enum PermisoTipo { Ninguno, AsuntoPersonal, Calamidad, Enfermedad, CitaMedica, Rehabilitacion, Oficial }
+        
+        /// <summary>
+        /// Analiza el texto del permiso y lo clasifica en un tipo estructurado.
+        /// </summary>
+        private PermisoTipo IdentificarTipoPermiso(string? tipoPermiso)
+        {
+            if (string.IsNullOrWhiteSpace(tipoPermiso)) return PermisoTipo.Ninguno;
+
+            string permisoUpper = tipoPermiso.ToUpperInvariant();
+
+            if (permisoUpper.Contains("OFICIAL")) return PermisoTipo.Oficial;
+            if (permisoUpper.Contains("ASUNTOS") && permisoUpper.Contains("PERSONALES")) return PermisoTipo.AsuntoPersonal;
+            if (permisoUpper.Contains("CALAMIDAD")) return PermisoTipo.Calamidad;
+            if (permisoUpper.Contains("ENFERMEDAD")) return PermisoTipo.Enfermedad;
+            if (permisoUpper.Contains("CITA") && permisoUpper.Contains("MEDICA")) return PermisoTipo.CitaMedica;
+            if (permisoUpper.Contains("REHABILITACION")) return PermisoTipo.Rehabilitacion;
+
+            return PermisoTipo.Ninguno;
+        }
+
+        /// <summary>
+        /// Construye un mapa de identidad para asociar nombres entre el biométrico y SIATH.
+        /// </summary>
+        private Dictionary<string, string> ConstruirMapaDeIdentidad(IEnumerable<dynamic> empleadosSeat, List<BiometricoData> todosLosBiometrico)
+        {
+            var mapa = new Dictionary<string, string>();
+            var mapeados = new HashSet<string>();
+            var empleadosBio = todosLosBiometrico.Select(b => new { b.Nombre, b.Apellido }).Distinct();
+
+            foreach (var empSeat in empleadosSeat)
+            {
+                string nombreCompletoSeat = NormalizeString(empSeat.Apellido + " " + empSeat.Nombre);
+                string? mejorMatch = null;
+                int maxPuntuacion = 0;
+
+                foreach (var empBio in empleadosBio)
+                {
+                    string nombreCompletoBio = NormalizeString(empBio.Nombre + " " + empBio.Apellido);
+                    if (mapeados.Contains(nombreCompletoBio)) continue;
+                    int puntuacion = GetMatchScore(nombreCompletoSeat, nombreCompletoBio);
+                    if (puntuacion > maxPuntuacion)
+                    {
+                        maxPuntuacion = puntuacion;
+                        mejorMatch = nombreCompletoBio;
+                    }
+                }
+                if (mejorMatch != null && maxPuntuacion > 1)
+                {
+                    mapa[mejorMatch] = nombreCompletoSeat;
+                    mapeados.Add(mejorMatch);
+                }
+            }
+            return mapa;
+        }
+
+        /// <summary>
+        /// Calcula una puntuación de coincidencia entre dos nombres.
         /// </summary>
         private int GetMatchScore(string nombreCompleto, string nombreParcial)
         {
@@ -210,20 +301,17 @@ namespace ef_core.Services
         }
 
         /// <summary>
-        /// Normaliza un string para comparación: lo convierte a minúsculas, quita tildes y la letra 'ñ'.
+        /// Normaliza un string para comparación (minúsculas, sin tildes, etc.).
         /// </summary>
         private string NormalizeString(string? input)
         {
             if (string.IsNullOrEmpty(input)) return string.Empty;
-
             string replacedN = input.ToLower().Replace('ñ', 'n');
             var normalizedString = replacedN.Normalize(NormalizationForm.FormD);
             var stringBuilder = new StringBuilder();
-
             foreach (var c in normalizedString)
             {
-                var unicodeCategory = CharUnicodeInfo.GetUnicodeCategory(c);
-                if (unicodeCategory != UnicodeCategory.NonSpacingMark)
+                if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
                 {
                     stringBuilder.Append(c);
                 }

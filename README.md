@@ -2,7 +2,7 @@
 
 ## Introducción
 
-Este proyecto es una solución de software integral desarrollada para la **Procuraduría General del Estado de Ecuador (PGE)**. El sistema automatiza el proceso de consolidación de reportes de asistencia de los empleados, solucionando un problema crítico de incompatibilidad entre dos sistemas legados diferentes y eliminando la necesidad de un procesamiento manual propenso a errores.
+Este proyecto es una solución de software integral desarrollada para la **Procuraduría General del Estado de Ecuador (PGE)**. El sistema automatiza el proceso de consolidación de reportes de asistencia de los empleados, solucionando un problema crítico el cual si no habia un registro de una marcación se necesitaba buscar e interactuar con los registros del otro sistema, siendo esto un proceso manual y lento, propenso a errores, esta solución se encargar de unir todos los datos y crear un solo reporte oficial rellenando cualquier marcacion faltante.
 
 ## El Problema
 
@@ -43,7 +43,7 @@ Se desarrolló una solución completa basada en .NET que automatiza todo el fluj
 | **Backend** | C#, .NET, ASP.NET Core Web API, Entity Framework Core                                           |
 | **Base de Datos** | SQLite (ligera y perfecta para despliegue en una sola máquina)                                  |
 | **Workers** | Aplicaciones de Consola .NET                                                                    |
-| **Lectura de Archivos** | `UglyToad.PdfPig` (para PDF), `ExcelDataReader` (para Excel)                                    |
+| **Lectura de Archivos** | `ExcelDataReader` (para Excel)                                    |
 | **Frontend** | HTML5, CSS, Bootstrap 5, JavaScript (Vanilla JS con Fetch API)                                 |
 
 ---
