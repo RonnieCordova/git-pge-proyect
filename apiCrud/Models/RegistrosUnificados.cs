@@ -32,6 +32,7 @@ namespace ef_core.Data // O el namespace que corresponda a tu proyecto
         /// </summary>
         public List<string> Fuentes { get; set; }
         public string? TipoPermiso { get; set; }
+        public TimeSpan? HorasNoTrabajadas { get; set; }
 
         public RegistroConsolidado()
         {

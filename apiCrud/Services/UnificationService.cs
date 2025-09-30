@@ -1,3 +1,5 @@
+// ...existing code...
+using apiCrud.Migrations;
 using ef_core.Data;
 using ef_core.DTOs;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +20,9 @@ namespace ef_core.Services
     {
         private readonly ApplicationDbContext _dbContext;
         private static readonly TimeSpan HoraDeEntradaOficial = new TimeSpan(8, 30, 0);
-        private static readonly TimeSpan VentanaToleranciaEntrada = new TimeSpan(0, 15, 0);
+        private static readonly TimeSpan VentanaToleranciaEntrada = new TimeSpan(0, 10, 0);
+        private static readonly TimeSpan HoraDeEntradaConMargen = new TimeSpan(8, 40, 0);
+        private static readonly TimeSpan HoraDeSalidaOficial = new TimeSpan(17, 0, 0);
 
         public UnificationService(ApplicationDbContext dbContext)
         {
@@ -145,6 +149,36 @@ namespace ef_core.Services
             registro.HoraEntrada = todasLasMarcaciones.First();
             registro.Fuentes.Add("Entrada: Registrada");
 
+            // Helper local: calcula horas no trabajadas tomando 08:40 como ancla de entrada
+            // (10min tolerancia) y 17:00 como ancla de salida.
+            TimeSpan CalcularHorasNoTrabajadas(DateTime entrada, DateTime salida)
+            {
+                var horaEntrada = entrada.TimeOfDay;
+                var horaSalida = salida.TimeOfDay;
+
+                // Si completó o excedió la jornada (llegó a o antes de 08:40 y salió a o después de 17:00) => 00:00
+                if (horaEntrada <= HoraDeEntradaConMargen && horaSalida >= HoraDeSalidaOficial)
+                {
+                    return TimeSpan.Zero;
+                }
+
+                var noTrabajadas = TimeSpan.Zero;
+
+                // Llegada tarde respecto a 08:40
+                if (horaEntrada > HoraDeEntradaConMargen)
+                {
+                    noTrabajadas += horaEntrada - HoraDeEntradaConMargen;
+                }
+
+                // Salida temprana respecto a 17:00
+                if (horaSalida < HoraDeSalidaOficial)
+                {
+                    noTrabajadas += HoraDeSalidaOficial - horaSalida;
+                }
+
+                return noTrabajadas;
+            }
+
             // Para el permiso "Oficial", cualquier segunda marcación es la salida final.
             if (permiso == PermisoTipo.Oficial)
             {
@@ -153,10 +187,15 @@ namespace ef_core.Services
                     registro.HoraSalida = todasLasMarcaciones.Skip(1).First();
                     registro.Fuentes.Add("Salida: Registrada (Permiso Oficial)");
                     registro.Estado = $"Jornada completada por permiso '{registro.TipoPermiso}'";
+
+                    if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue)
+                    {
+                        registro.HorasNoTrabajadas = CalcularHorasNoTrabajadas(registro.HoraEntrada.Value, registro.HoraSalida.Value);
+                    }
                 }
                 else
                 {
-                     registro.Estado = $"Entrada registrada, salida por permiso oficial pendiente";
+                    registro.Estado = $"Entrada registrada, salida por permiso oficial pendiente";
                 }
                 return;
             }
@@ -167,9 +206,14 @@ namespace ef_core.Services
             {
                 registro.HoraSalida = todasLasMarcaciones.Last();
                 registro.Fuentes.Add("Salida: Registrada (Permiso)");
-                
+
                 var duracionJornada = registro.HoraSalida.Value - registro.HoraEntrada.Value;
-                registro.Estado = $"Jornada con permiso '{registro.TipoPermiso}' ({duracionJornada.Hours}h {duracionJornada.Minutes}m)";
+                registro.Estado = $"Jornada con permiso '{registro.TipoPermiso}'({duracionJornada.Hours}h {duracionJornada.Minutes}m)";
+
+                if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue)
+                {
+                    registro.HorasNoTrabajadas = CalcularHorasNoTrabajadas(registro.HoraEntrada.Value, registro.HoraSalida.Value);
+                }
             }
             else
             {
@@ -177,6 +221,7 @@ namespace ef_core.Services
             }
         }
         
+
         /// <summary>
         /// Aplica la lógica estándar de unificación, incluyendo la reconciliación de horas de entrada.
         /// </summary>
@@ -187,19 +232,48 @@ namespace ef_core.Services
             registro.HoraEntrada = ReconciliarHoraEntrada(horaEntradaSiath, horaEntradaBio, registro.Fuentes);
 
             var marcacionesAlmuerzo = marcacionesBio.Where(m => m.EsSalidaAlmuerzo || m.EsLlegadaAlmuerzo).OrderBy(m => m.Hora).ToList();
-            
+
             registro.HoraSalidaAlmuerzo = registroSeat?.HoraSalidaAlmuerzo ?? marcacionesAlmuerzo.FirstOrDefault(m => m.EsSalidaAlmuerzo)?.Hora;
             registro.HoraRegresoAlmuerzo = registroSeat?.HoraRegresoAlmuerzo ?? marcacionesAlmuerzo.FirstOrDefault(m => m.EsLlegadaAlmuerzo)?.Hora;
             registro.HoraSalida = registroSeat?.HoraSalida ?? marcacionesBio.LastOrDefault(b => b.EsSalida)?.Hora;
-            
+
             if (registroSeat?.HoraSalidaAlmuerzo != null) registro.Fuentes.Add("Salida Almuerzo: SIATH");
             else if (marcacionesAlmuerzo.Any(m => m.EsSalidaAlmuerzo)) registro.Fuentes.Add("Salida Almuerzo: Biométrico");
-            
+
             if (registroSeat?.HoraRegresoAlmuerzo != null) registro.Fuentes.Add("Regreso Almuerzo: SIATH");
             else if (marcacionesAlmuerzo.Any(m => m.EsLlegadaAlmuerzo)) registro.Fuentes.Add("Regreso Almuerzo: Biométrico");
 
             if (registroSeat?.HoraSalida != null) registro.Fuentes.Add("Salida: SIATH");
             else if (marcacionesBio.Any(b => b.EsSalida)) registro.Fuentes.Add("Salida: Biométrico");
+
+            // Lógica local para calcular horas no trabajadas respecto a 08:40 - 17:00
+            if (registro.HoraEntrada.HasValue && registro.HoraSalida.HasValue)
+            {
+                var horaEntrada = registro.HoraEntrada.Value.TimeOfDay;
+                var horaSalida = registro.HoraSalida.Value.TimeOfDay;
+
+                // Si completó la jornada o la excedió => 00:00
+                if (horaEntrada <= HoraDeEntradaConMargen && horaSalida >= HoraDeSalidaOficial)
+                {
+                    registro.HorasNoTrabajadas = TimeSpan.Zero;
+                }
+                else
+                {
+                    var noTrabajadas = TimeSpan.Zero;
+
+                    if (horaEntrada > HoraDeEntradaConMargen)
+                    {
+                        noTrabajadas += horaEntrada - HoraDeEntradaConMargen;
+                    }
+
+                    if (horaSalida < HoraDeSalidaOficial)
+                    {
+                        noTrabajadas += HoraDeSalidaOficial - horaSalida;
+                    }
+
+                    registro.HorasNoTrabajadas = noTrabajadas;
+                }
+            }
         }
 
         /// <summary>
@@ -320,4 +394,6 @@ namespace ef_core.Services
         }
     }
 }
+// ...existing code...
+
 //http://localhost:5165/api/reportes/exportar-asistencia?fechaInicioStr=2025-08-18&fechaFinStr=2025-08-22

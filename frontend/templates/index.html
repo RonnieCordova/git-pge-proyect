@@ -14,84 +14,69 @@
             background-color: #f0f2f5;
             font-family: 'Poppins', sans-serif;
         }
-
         .header-title {
             color: #2c3e50;
             font-weight: 600;
         }
-
         .form-label {
             font-weight: 500;
             color: #34495e;
         }
-
         .card {
             border: none;
             border-radius: 12px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
-
         .table th {
             background-color: #34495e;
             color: #fff;
             text-transform: uppercase;
             font-weight: 600;
         }
-
         .table-hover tbody tr:hover {
             background-color: #e9ecef;
         }
-
         .btn-primary {
             background-color: #3498db;
             border-color: #3498db;
             transition: all 0.3s ease;
         }
-
         .btn-primary:hover {
             background-color: #2980b9;
             border-color: #2980b9;
             transform: translateY(-2px);
         }
-
         .btn-success {
             background-color: #2ecc71;
             border-color: #2ecc71;
             transition: all 0.3s ease;
         }
-
         .btn-success:hover {
             background-color: #27ae60;
             border-color: #27ae60;
             transform: translateY(-2px);
         }
-
         .empty-state,
         .loading-state {
             text-align: center;
             color: #7f8c8d;
             padding: 50px;
         }
-
         #tablaResultados {
             display: none;
         }
-
         .status-Atraso {
             background-color: #f39c12;
             color: white;
         }
-
         .status-Falta {
             background-color: #e74c3c;
             color: white;
         }
-
         .status-Incompleto {
             background-color: #e67e22;
             color: white;
         }
-
         .status-Completo {
             background-color: #2ecc71;
             color: white;
@@ -132,7 +117,6 @@
             <button id="btnLimpiar" class="btn btn-secondary w-30 m-2" onclick="limpiarFiltro()">
                 <i class="bi bi-x-circle"></i> Limpiar
             </button>
-
         </div>
 
         <div class="card p-4">
@@ -156,6 +140,7 @@
                             <th>Estado</th>
                             <th>Fuentes</th>
                             <th>Tipo de permiso</th>
+                            <th>Horas No Trab.</th>
                         </tr>
                     </thead>
                     <tbody id="tablaCuerpo"></tbody>
@@ -191,8 +176,6 @@
             const fechaInicio = fechaIniInput.value;
             const fechaFin = fechaFinInput.value;
 
-            //console.log(fechaInicio, fechaFin);
-
             if (!fechaInicio || !fechaFin) {
                 alert('Por favor, selecciona una fecha de inicio y una fecha de fin.');
                 return;
@@ -201,6 +184,8 @@
             mostrarEstado('loading');
 
             try {
+                // NOTA: Asegúrate que la URL de tu API sea la correcta.
+                // En tu código original era /api/reportes/visualizar-asistencia
                 const url = `${API_BASE_URL}/api/reportes/visualizar-asistencia?fechaInicioStr=${fechaInicio}&fechaFinStr=${fechaFin}`;
                 const response = await fetch(url);
 
@@ -215,7 +200,6 @@
                 console.error('Error al buscar los datos:', error);
                 mostrarEstado('empty', 'Ocurrió un error al conectar con la API.');
             }
-
         });
 
         function filtrarTabla() {
@@ -236,7 +220,6 @@
             filtrarTabla();
         }
 
-
         btnExportar.addEventListener('click', () => {
             const fechaInicio = fechaIniInput.value;
             const fechaFin = fechaFinInput.value;
@@ -247,6 +230,7 @@
                 return;
             }
 
+            // NOTA: Asegúrate que la URL de tu API sea la correcta.
             const url = `${API_BASE_URL}/api/reportes/exportar-asistencia?fechaInicioStr=${fechaInicio}&fechaFinStr=${fechaFin}&filtroNombre=${filtroNombre}`;
             window.location.href = url;
         });
@@ -259,34 +243,38 @@
                 return;
             }
 
+            // --- SECCIÓN CORREGIDA Y OPTIMIZADA ---
+            // 1. Las funciones de formato ahora se definen UNA SOLA VEZ, fuera del bucle.
+            const formatTime = (dateTimeString) => {
+                if (!dateTimeString) return '';
+                const date = new Date(dateTimeString);
+                return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false });
+            };
+
+            const formatDate = (dateString) => {
+                if (!dateString) return '';
+                const datePart = dateString.split('T')[0];
+                const [year, month, day] = datePart.split('-');
+                const localDate = new Date(year, month - 1, day);
+                return localDate.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil' });
+            };
+            
+            // 2. Aquí está la función que faltaba
+            const formatWorkHours = (timeSpanString) => {
+                if (!timeSpanString) return '--';
+                // La cadena viene como "HH:mm:ss", solo tomamos los primeros 5 caracteres (HH:mm)
+                return timeSpanString.substring(0, 5);
+            };
+
             data.forEach(registro => {
                 const fila = document.createElement('tr');
-
-                const formatTime = (dateTimeString) => {
-                    if (!dateTimeString) return '';
-                    const date = new Date(dateTimeString);
-                    return date.toLocaleTimeString('es-EC', { hour: '2-digit', minute: '2-digit', hour12: false });
-                };
-
-                const formatDate = (dateString) => {
-                    if (!dateString) return '';
-                    // 1. Tomamos solo la parte de la fecha (ej: "2025-08-18")
-                    const datePart = dateString.split('T')[0];
-                    // 2. Separamos año, mes y día
-                    const [year, month, day] = datePart.split('-');
-                    // 3. Creamos una nueva fecha que JS interpreta como local.
-                    //    El mes es -1 porque en JavaScript los meses van de 0 a 11.
-                    const localDate = new Date(year, month - 1, day);
-                    // 4. Se formatea a la zona horaria de Ecuador (es-EC) para asegurar consistencia
-                    return localDate.toLocaleDateString('es-EC', { timeZone: 'America/Guayaquil' });
-                };
-
                 let estadoClass = '';
                 if (registro.estado?.includes('Atraso')) estadoClass = 'status-Atraso';
                 if (registro.estado?.includes('Falta')) estadoClass = 'status-Falta';
                 if (registro.estado?.includes('Incompleto')) estadoClass = 'status-Incompleto';
                 if (registro.estado?.includes('Completo')) estadoClass = 'status-Completo';
 
+                // 3. El HTML de la fila ahora puede llamar a las funciones sin error.
                 fila.innerHTML = `
                     <td>${registro.area || ''}</td>
                     <td>${registro.nombreCompleto || ''}</td>
@@ -298,6 +286,7 @@
                     <td class="${estadoClass}">${registro.estado || ''}</td>
                     <td>${registro.fuentes ? registro.fuentes.join(', ') : ''}</td>
                     <td>${registro.tipoPermiso || ''}</td>
+                    <td>${formatWorkHours(registro.horasNoTrabajadas)}</td>
                 `;
                 tablaCuerpo.appendChild(fila);
             });
