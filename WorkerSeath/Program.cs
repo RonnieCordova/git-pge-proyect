@@ -15,7 +15,7 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    string carpetaReportes = @"C:\xampp\htdocs\pruebas_worker_seat";
+    string carpetaReportes = @"COLOCAR RUTA";
     string carpetaArchivados = Path.Combine(carpetaReportes, "procesados");
     Directory.CreateDirectory(carpetaArchivados);
 

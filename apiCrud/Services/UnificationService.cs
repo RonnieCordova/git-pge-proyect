@@ -1,4 +1,3 @@
-// ...existing code...
 using apiCrud.Migrations;
 using ef_core.Data;
 using ef_core.DTOs;
@@ -404,6 +403,4 @@ namespace ef_core.Services
         }
     }
 }
-// ...existing code...
-
 //http://localhost:5165/api/reportes/exportar-asistencia?fechaInicioStr=2025-08-18&fechaFinStr=2025-08-22

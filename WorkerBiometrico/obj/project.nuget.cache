@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "kgA33meX9o0=",
+  "dgSpecHash": "T6EUJqAlpPQ=",
   "success": true,
   "projectFilePath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerBiometrico\\WorkerBiometrico.csproj",
   "expectedPackageFiles": [
@@ -70,7 +70,10 @@
     "C:\\Users\\pguayas1\\.nuget\\packages\\system.security.cryptography.pkcs\\7.0.2\\system.security.cryptography.pkcs.7.0.2.nupkg.sha512",
     "C:\\Users\\pguayas1\\.nuget\\packages\\system.text.encoding.codepages\\7.0.0\\system.text.encoding.codepages.7.0.0.nupkg.sha512",
     "C:\\Users\\pguayas1\\.nuget\\packages\\system.text.encodings.web\\9.0.8\\system.text.encodings.web.9.0.8.nupkg.sha512",
-    "C:\\Users\\pguayas1\\.nuget\\packages\\system.text.json\\9.0.8\\system.text.json.9.0.8.nupkg.sha512"
+    "C:\\Users\\pguayas1\\.nuget\\packages\\system.text.json\\9.0.8\\system.text.json.9.0.8.nupkg.sha512",
+    "C:\\Users\\pguayas1\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x86\\8.0.20\\microsoft.netcore.app.runtime.win-x86.8.0.20.nupkg.sha512",
+    "C:\\Users\\pguayas1\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x86\\8.0.20\\microsoft.windowsdesktop.app.runtime.win-x86.8.0.20.nupkg.sha512",
+    "C:\\Users\\pguayas1\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x86\\8.0.20\\microsoft.aspnetcore.app.runtime.win-x86.8.0.20.nupkg.sha512"
   ],
   "logs": []
 }
