@@ -230,8 +230,10 @@
                 return;
             }
 
-            // NOTA: Asegúrate que la URL de tu API sea la correcta.
-            const url = `${API_BASE_URL}/api/reportes/exportar-asistencia?fechaInicioStr=${fechaInicio}&fechaFinStr=${fechaFin}&filtroNombre=${filtroNombre}`;
+            // ÚNICO CAMBIO REQUERIDO:
+            // Se corrigió el nombre del parámetro de 'filtroNombre' a 'nombre' para que coincida con la API.
+            // Se añadió 'encodeURIComponent' para manejar correctamente nombres con espacios o caracteres especiales.
+            const url = `${API_BASE_URL}/api/reportes/exportar-asistencia?fechaInicioStr=${fechaInicio}&fechaFinStr=${fechaFin}&nombre=${encodeURIComponent(filtroNombre)}`;
             window.location.href = url;
         });
 

@@ -32,7 +32,7 @@ namespace ef_core.Services
         /// <summary>
         /// Genera un reporte consolidado de asistencia para un rango de fechas.
         /// </summary>
-        public async Task<List<RegistroConsolidado>> GenerarReporteConsolidado(DateOnly fechaInicio, DateOnly fechaFin)
+        public async Task<List<RegistroConsolidado>> GenerarReporteConsolidado(DateOnly fechaInicio, DateOnly fechaFin, string? nombre = null)
         {
             // 1. OBTENCIÓN DE DATOS CRUDOS EN UTC
             var inicioDtUtc = new DateTime(fechaInicio.Year, fechaInicio.Month, fechaInicio.Day, 0, 0, 0, DateTimeKind.Utc);
@@ -50,6 +50,16 @@ namespace ef_core.Services
             // 2. PREPARACIÓN Y PROCESAMIENTO
             var resultadoFinal = new List<RegistroConsolidado>();
             var empleadosSeatUnicos = todosLosSeat.Select(s => new { s.Nombre, s.Apellido }).Distinct().ToList();
+
+            if (!string.IsNullOrWhiteSpace(nombre))
+            {
+                // Normalizamos el nombre del filtro y el de la lista para una comparación robusta
+                string nombreFiltroNormalizado = NormalizeString(nombre);
+                empleadosSeatUnicos = empleadosSeatUnicos
+                    .Where(emp => NormalizeString(emp.Apellido + " " + emp.Nombre) == nombreFiltroNormalizado)
+                    .ToList();
+            }
+            // Construimos un mapa de identidad para asociar nombres entre el biométrico y SIATH
             var mapaDeNombres = ConstruirMapaDeIdentidad(empleadosSeatUnicos, todosLosBiometrico);
 
             for (var dia = fechaInicio; dia <= fechaFin; dia = dia.AddDays(1))

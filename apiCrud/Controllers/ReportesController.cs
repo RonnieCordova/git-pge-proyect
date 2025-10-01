@@ -20,7 +20,7 @@ public class ReportesController : ControllerBase
     }
 
     [HttpGet("exportar-asistencia")]
-    public async Task<IActionResult> ExportarAsistencia([FromQuery] string fechaInicioStr, [FromQuery] string fechaFinStr)
+    public async Task<IActionResult> ExportarAsistencia([FromQuery] string fechaInicioStr, [FromQuery] string fechaFinStr, [FromQuery] string? nombre = null)
     {
         // Validamos las fechas de entrada
         if (!DateOnly.TryParse(fechaInicioStr, out var fechaInicio) || !DateOnly.TryParse(fechaFinStr, out var fechaFin))
@@ -36,7 +36,7 @@ public class ReportesController : ControllerBase
         _logger.LogWarning("--- LLAMANDO AL SERVICIO DE UNIFICACIÓN ---");
 
         // 1. Llamamos al servicio de unificación para obtener los datos procesados.
-        var datosConsolidados = await _unificationService.GenerarReporteConsolidado(fechaInicio, fechaFin);
+        var datosConsolidados = await _unificationService.GenerarReporteConsolidado(fechaInicio, fechaFin, nombre);
 
         // 2. Pasamos esos datos al servicio de exportación para obtener el archivo Excel.
         var archivoBytes = _excelExportService.ExportarAExcel(datosConsolidados, fechaInicio, fechaFin);
@@ -48,7 +48,7 @@ public class ReportesController : ControllerBase
     }
 
     [HttpGet("visualizar-asistencia")]
-    public async Task<IActionResult> VisualizarAsistencia([FromQuery] string fechaInicioStr, [FromQuery] string fechaFinStr)
+    public async Task<IActionResult> VisualizarAsistencia([FromQuery] string fechaInicioStr, [FromQuery] string fechaFinStr, [FromQuery] string? nombre = null)
     {
         if (!DateOnly.TryParse(fechaInicioStr, out var fechaInicio) || !DateOnly.TryParse(fechaFinStr, out var fechaFin))
         {
@@ -57,7 +57,7 @@ public class ReportesController : ControllerBase
 
         try
         {
-            var datosConsolidados = await _unificationService.GenerarReporteConsolidado(fechaInicio, fechaFin);
+            var datosConsolidados = await _unificationService.GenerarReporteConsolidado(fechaInicio, fechaFin, nombre);
             return Ok(datosConsolidados); // Devuelve los datos como JSON
         }
         catch (Exception ex)
