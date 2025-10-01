@@ -17,7 +17,7 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 try
 {
     // --- 1. CONFIGURACIÓN DE RUTAS Y BÚSQUEDA DE ARCHIVOS ---
-    string carpetaReportes = @"C:\xampp\htdocs\pruebas_worker_biometrico";
+    string carpetaReportes = @"C:\xampp\htdocs\reportes_biometrico";
     string carpetaArchivados = Path.Combine(carpetaReportes, "procesados");
     Directory.CreateDirectory(carpetaArchivados); // Crea la carpeta si no existe.
 

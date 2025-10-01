@@ -10,11 +10,11 @@
         "projectUniqueName": "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
         "projectName": "apiCrud",
         "projectPath": "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\apiCrud.csproj",
-        "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
+        "packagesPath": "C:\\Users\\LENOVO.USER\\.nuget\\packages\\",
         "outputPath": "C:\\xampp\\htdocs\\git-pge-proyect\\apiCrud\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
-          "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+          "C:\\Users\\LENOVO.USER\\AppData\\Roaming\\NuGet\\NuGet.Config"
         ],
         "originalTargetFrameworks": [
           "net8.0"
@@ -89,7 +89,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.414/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

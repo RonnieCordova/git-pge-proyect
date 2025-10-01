@@ -15,7 +15,7 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    string carpetaReportes = @"C:\xampp\htdocs\pruebas_worker_seat";
+    string carpetaReportes = @"C:\xampp\htdocs\reportes_seat";
     string carpetaArchivados = Path.Combine(carpetaReportes, "procesados");
     Directory.CreateDirectory(carpetaArchivados);
 
@@ -74,7 +74,7 @@ try
         
             string area = row[0].ToString() ?? "Sin Área";
             string empleadoActual = row[1].ToString() ?? "";
-            string tipoPermiso = row[8].ToString() ?? "Jornada normal";
+            string tipoPermiso = row[7].ToString() ?? "Jornada normal";
 
             var nameParts = empleadoActual.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
             string nombre = "";

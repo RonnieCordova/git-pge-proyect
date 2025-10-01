@@ -3434,7 +3434,7 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\pguayas1\\.nuget\\packages\\": {}
+    "C:\\Users\\LENOVO.USER\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
@@ -3442,11 +3442,11 @@
       "projectUniqueName": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerBiometrico\\WorkerBiometrico.csproj",
       "projectName": "WorkerBiometrico",
       "projectPath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerBiometrico\\WorkerBiometrico.csproj",
-      "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
+      "packagesPath": "C:\\Users\\LENOVO.USER\\.nuget\\packages\\",
       "outputPath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerBiometrico\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\LENOVO.USER\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -3516,7 +3516,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.414/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
