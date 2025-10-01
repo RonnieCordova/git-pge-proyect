@@ -6554,7 +6554,7 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\LENOVO.USER\\.nuget\\packages\\": {}
+    "C:\\Users\\pguayas1\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
@@ -6562,11 +6562,11 @@
       "projectUniqueName": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
       "projectName": "WorkerSeath",
       "projectPath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerSeath\\WorkerSeath.csproj",
-      "packagesPath": "C:\\Users\\LENOVO.USER\\.nuget\\packages\\",
+      "packagesPath": "C:\\Users\\pguayas1\\.nuget\\packages\\",
       "outputPath": "C:\\xampp\\htdocs\\git-pge-proyect\\WorkerSeath\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
-        "C:\\Users\\LENOVO.USER\\AppData\\Roaming\\NuGet\\NuGet.Config"
+        "C:\\Users\\pguayas1\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net8.0"
@@ -6640,7 +6640,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.413/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.414/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

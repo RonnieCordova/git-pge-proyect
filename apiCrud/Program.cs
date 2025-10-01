@@ -52,6 +52,12 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+// 1. Habilita el uso de archivos por defecto, como index.html
+app.UseDefaultFiles();
+
+// 2. Habilita la capacidad de servir archivos estáticos desde la carpeta wwwroot
+app.UseStaticFiles();
+
 app.UseCors("AllowAllOrigins");
 app.UseAuthorization();
 app.UseHttpsRedirection();
