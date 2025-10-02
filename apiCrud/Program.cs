@@ -3,63 +3,67 @@ using ef_core.Data;
 using ef_core.Services;
 using OfficeOpenXml;
 using System.Text.Json.Serialization;
-using utils;
 
-var builder = WebApplication.CreateBuilder(args);
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    // Esta es la configuración más robusta: le dice a la app
+    // que su contenido web SIEMPRE está en una carpeta 'wwwroot'
+    // relativa a la ubicación del .exe.
+    WebRootPath = "wwwroot"
+});
 
 ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-// Add services to the container.
+// --- REGISTRO DE SERVICIOS Y CONFIGURACIÓN ---
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-
-// --- CONFIGURACIÓN DE BASE DE DATOS ---
 builder.Services.AddDbContext<ApplicationDbContext>(options => 
-    options.UseSqlite("Data Source=users.db")); // Tu configuración de SQLite está correcta.
+    options.UseSqlite("Data Source=users.db"));
 
-// --- CONFIGURACIÓN DE CONTROLADORES Y JSON (AQUÍ ESTÁ LA CORRECCIÓN) ---
 builder.Services.AddControllers().AddJsonOptions(options =>
-    {
-        // Se añade el convertidor que fuerza a las fechas a ser tratadas como UTC.
-        options.JsonSerializerOptions.Converters.Add(new UtcDateTimeConverter()); 
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+{
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 
-// --- REGISTRO DE SERVICIOS ---
 builder.Services.AddScoped<BiometricoDataService>();
 builder.Services.AddScoped<SeatDataService>();
 builder.Services.AddScoped<UnificationService>();
 builder.Services.AddScoped<ExcelExportService>();
 
-// --- CONFIGURACIÓN DE CORS ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAllOrigins",
-        builder =>
+        policy =>
         {
-            builder.AllowAnyOrigin()
-                   .AllowAnyMethod()
-                   .AllowAnyHeader();
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
         });
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// --- CONFIGURACIÓN DEL PIPELINE DE HTTP (ORDEN CRÍTICO) ---
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 1. Habilita el uso de archivos por defecto, como index.html
-app.UseDefaultFiles();
+app.UseHttpsRedirection();
 
-// 2. Habilita la capacidad de servir archivos estáticos desde la carpeta wwwroot
+// El orden aquí es MUY importante.
+// 1. Usa rutas por defecto (busca index.html).
+app.UseDefaultFiles();
+// 2. Sirve los archivos encontrados en la carpeta wwwroot.
 app.UseStaticFiles();
 
 app.UseCors("AllowAllOrigins");
 app.UseAuthorization();
-app.UseHttpsRedirection();
+
+// 3. Mapea los controladores de la API.
 app.MapControllers();
+
+// 4. Forzamos el puerto y ejecutamos.
+app.Urls.Add("http://localhost:5165");
 app.Run();
