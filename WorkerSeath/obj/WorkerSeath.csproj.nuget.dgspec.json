@@ -49,21 +49,21 @@
             },
             "Microsoft.AspNetCore.OpenApi": {
               "target": "Package",
-              "version": "[8.0.19, )"
+              "version": "[8.0.0, )"
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[9.0.8, )"
+              "version": "[8.0.6, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[9.0.8, )"
+              "version": "[8.0.6, )"
             },
             "Microsoft.EntityFrameworkCore.Sqlite": {
               "target": "Package",
-              "version": "[9.0.8, )"
+              "version": "[8.0.6, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
@@ -83,15 +83,15 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x86",
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
               "version": "[8.0.20, 8.0.20]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x86",
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
               "version": "[8.0.20, 8.0.20]"
             },
             {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x86",
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
               "version": "[8.0.20, 8.0.20]"
             }
           ],
@@ -107,7 +107,7 @@
         }
       },
       "runtimes": {
-        "win-x86": {
+        "win-x64": {
           "#import": []
         }
       }
@@ -165,19 +165,11 @@
             },
             "System.Net.Http.Json": {
               "target": "Package",
-              "version": "[9.0.8, )"
+              "version": "[8.0.0, )"
             },
             "System.Text.Encoding.CodePages": {
               "target": "Package",
-              "version": "[9.0.8, )"
-            },
-            "UglyToad.PdfPig": {
-              "target": "Package",
-              "version": "[1.7.0-custom-5, )"
-            },
-            "iText7": {
-              "target": "Package",
-              "version": "[9.2.0, )"
+              "version": "[8.0.0, )"
             }
           },
           "imports": [
@@ -193,15 +185,15 @@
           "warn": true,
           "downloadDependencies": [
             {
-              "name": "Microsoft.AspNetCore.App.Runtime.win-x86",
+              "name": "Microsoft.AspNetCore.App.Runtime.win-x64",
               "version": "[8.0.20, 8.0.20]"
             },
             {
-              "name": "Microsoft.NETCore.App.Runtime.win-x86",
+              "name": "Microsoft.NETCore.App.Runtime.win-x64",
               "version": "[8.0.20, 8.0.20]"
             },
             {
-              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x86",
+              "name": "Microsoft.WindowsDesktop.App.Runtime.win-x64",
               "version": "[8.0.20, 8.0.20]"
             }
           ],
@@ -214,7 +206,7 @@
         }
       },
       "runtimes": {
-        "win-x86": {
+        "win-x64": {
           "#import": []
         }
       }

@@ -17,7 +17,7 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 try
 {
     // --- 1. CONFIGURACIÓN DE RUTAS Y BÚSQUEDA DE ARCHIVOS ---
-    string carpetaReportes = @"COLOCAR RUTA";
+    string carpetaReportes = @"C:\Users\estephany.gavilanes\Desktop\ASISTENCIAS\REPORTES SISTEMA BIOMÉTRICO";
     string carpetaArchivados = Path.Combine(carpetaReportes, "procesados");
     Directory.CreateDirectory(carpetaArchivados); // Crea la carpeta si no existe.
 

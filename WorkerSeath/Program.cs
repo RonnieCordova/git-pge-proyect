@@ -15,7 +15,7 @@ Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
 
 try
 {
-    string carpetaReportes = @"COLOCAR RUTA";
+    string carpetaReportes = @"C:\Users\estephany.gavilanes\Desktop\ASISTENCIAS\REPORTES SIATH";
     string carpetaArchivados = Path.Combine(carpetaReportes, "procesados");
     Directory.CreateDirectory(carpetaArchivados);
 
